@@ -67,15 +67,13 @@ export default function Header({ logoUrl, onSetLogo }) {
               </>
             ) : (
               <label className="cursor-pointer group relative">
-                <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/20 hover:bg-white/20 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-                    <path d="M8 7h6"/>
-                    <path d="M8 11h8"/>
-                  </svg>
-                </div>
+                <img
+                  src={`${import.meta.env.BASE_URL}ycis-logo.svg`}
+                  alt="YCIS logo"
+                  className="h-14 w-14 object-contain bg-white rounded-xl p-1"
+                />
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-black/90 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  {isUploading ? "Uploading..." : "Click to add logo"}
+                  {isUploading ? "Uploading..." : "Click to change logo"}
                 </div>
                 <input
                   type="file"
