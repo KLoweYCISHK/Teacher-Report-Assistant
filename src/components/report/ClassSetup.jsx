@@ -11,7 +11,7 @@ import {
   BookOpen, Calendar, Users, Plus, Trash2, ArrowRight,
   Briefcase, Filter, FileText, Check, Upload
 } from "lucide-react";
-import { REPORT_PERIODS, OPTIONAL_CATEGORIES } from "@/lib/constants";
+import { REPORT_PERIODS, OPTIONAL_CATEGORIES, STANDARD_CATEGORIES, REQUIRED_CATEGORY_IDS } from "@/lib/constants";
 
 
 export default function ClassSetup({
@@ -26,11 +26,11 @@ export default function ClassSetup({
   const [isCreatingSubject, setIsCreatingSubject] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectType, setNewSubjectType] = useState("full");
-  const [selectedOptionals, setSelectedOptionals] = useState({ HPL: false, Language: false, Homework: false });
+  const [selectedOptionals, setSelectedOptionals] = useState({ HPL: false, Homework: false });
   const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
-    setSelectedOptionals({ HPL: false, Language: false, Homework: false });
+    setSelectedOptionals({ HPL: false, Homework: false });
   }, [selectedSubject?.id]);
 
   const filteredSubjects = subjects.filter(s => s.department_id === selectedDept?.id);
@@ -89,19 +89,11 @@ export default function ClassSetup({
         label: t.trim() || `Mock Category ${i + 1}`,
       }));
     } else if (isSharedStyle) {
-      finalCategories.push({ id: "Assessment", label: "Assessment" });
-      if (selectedOptionals.HPL) finalCategories.push({ id: "HPL", label: "Approaches to Learning" });
-      if (selectedOptionals.Language) finalCategories.push({ id: "Language", label: "Language" });
-      if (selectedOptionals.Homework) finalCategories.push({ id: "Homework", label: "Homework" });
-      finalCategories.push({ id: "Improvement", label: "Improvement" });
+      finalCategories = STANDARD_CATEGORIES.filter(c =>
+        REQUIRED_CATEGORY_IDS.includes(c.id) || selectedOptionals[c.id]
+      );
     } else {
-      finalCategories = [
-        { id: "HPL", label: "Approaches to Learning" },
-        { id: "Language", label: "Language" },
-        { id: "Assessment", label: "Assessment" },
-        { id: "Homework", label: "Homework" },
-        { id: "Improvement", label: "Improvement" },
-      ];
+      finalCategories = [...STANDARD_CATEGORIES];
     }
 
     onStartClass(students, finalCategories);
@@ -287,16 +279,14 @@ export default function ClassSetup({
                 <Filter className="w-5 h-5 text-accent" />
                 <h3 className="font-bold">Configure Categories</h3>
               </div>
-              <p className="text-sm text-muted-foreground">Assessment and Improvement are compulsory. Select at least one optional.</p>
+              <p className="text-sm text-muted-foreground">Both Performance based categories and Development are compulsory. Select at least one optional.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg opacity-70 cursor-not-allowed">
-                  <Check className="w-4 h-4 text-accent" />
-                  <span className="font-bold text-sm">Assessment (Required)</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg opacity-70 cursor-not-allowed">
-                  <Check className="w-4 h-4 text-accent" />
-                  <span className="font-bold text-sm">Improvement (Required)</span>
-                </div>
+                {STANDARD_CATEGORIES.filter(c => REQUIRED_CATEGORY_IDS.includes(c.id)).map(c => (
+                  <div key={c.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg opacity-70 cursor-not-allowed">
+                    <Check className="w-4 h-4 text-accent" />
+                    <span className="font-bold text-sm">{c.label} (Required)</span>
+                  </div>
+                ))}
                 {OPTIONAL_CATEGORIES.map(opt => (
                   <label
                     key={opt.id}
