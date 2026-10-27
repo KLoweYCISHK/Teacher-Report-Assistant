@@ -7,6 +7,7 @@ import {
   Copy, Check
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
+import { PROGRESS_PERIODS } from "@/lib/constants";
 
 export default function StudentStep({
   subject,
@@ -141,16 +142,12 @@ export default function StudentStep({
                   <Globe className="w-3 h-3 mr-1" /> Share w/ Subjects
                 </Button>
               )}
-              {isPeriodShareable && reportPeriod === "Progress 2" && (
-                <Button variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id, "Progress 3")}>
-                  <Share2 className="w-3 h-3 mr-1" /> P2 → P3
-                </Button>
-              )}
-              {isPeriodShareable && reportPeriod === "Progress 3" && (
-                <Button variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id, "Progress 2")}>
-                  <Share2 className="w-3 h-3 mr-1" /> P3 → P2
-                </Button>
-              )}
+              {isPeriodShareable && PROGRESS_PERIODS.includes(reportPeriod) &&
+                PROGRESS_PERIODS.filter(p => p !== reportPeriod).map(target => (
+                  <Button key={target} variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id, target)}>
+                    <Share2 className="w-3 h-3 mr-1" /> {reportPeriod.replace("Progress ", "P")} → {target.replace("Progress ", "P")}
+                  </Button>
+                ))}
             </div>
           </div>
         </CardHeader>
