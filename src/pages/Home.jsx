@@ -10,6 +10,7 @@ import ActionPanel from "@/components/report/ActionPanel";
 import ResultPanel from "@/components/report/ResultPanel.jsx";
 
 import ShareModal from "@/components/report/ShareModal";
+import PeriodShareModal from "@/components/report/PeriodShareModal";
 
 export default function Home() {
   const data = useReportData();
@@ -23,6 +24,7 @@ export default function Home() {
   const [activeCategories, setActiveCategories] = useState([]);
   const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
   const [shareModalData, setShareModalData] = useState(null);
+  const [periodShareCat, setPeriodShareCat] = useState(null);
 
   const isSetup = students.length === 0;
   const isResultStep = !isSetup && currentStepIndex === students.length;
@@ -117,12 +119,16 @@ export default function Home() {
     setShareModalData(null);
   };
 
-  const handleSharePeriod = async (categoryId, targetPeriod) => {
-    if (!selectedSubject) return;
+  const handleSharePeriods = async (targetPeriods) => {
+    if (!selectedSubject || !periodShareCat) return;
     const sourcePeriod = reportPeriod;
-    if (!confirm(`Replace all ${categoryId} comments in ${targetPeriod} with data from ${sourcePeriod}?`)) return;
-    await data.sharePeriodComments(selectedSubject.id, categoryId, sourcePeriod, targetPeriod);
-    alert(`Successfully copied to ${targetPeriod}!`);
+    const list = targetPeriods.join(" and ");
+    if (!confirm(`Replace all ${periodShareCat} comments in ${list} with data from ${sourcePeriod}?`)) return;
+    for (const target of targetPeriods) {
+      await data.sharePeriodComments(selectedSubject.id, periodShareCat, sourcePeriod, target);
+    }
+    alert(`Successfully copied to ${list}!`);
+    setPeriodShareCat(null);
   };
 
   const generateFinalBatch = () => {
@@ -221,7 +227,7 @@ export default function Home() {
             onEditComment={async (id, newText) => await data.editComment(id, newText)}
             onDeleteComment={async (id) => await data.deleteComment(id)}
             onOpenShareModal={(catId) => setShareModalData({ catId })}
-            onSharePeriod={handleSharePeriod}
+            onSharePeriod={(catId) => setPeriodShareCat(catId)}
             onDeleteAllComments={handleDeleteAllComments}
             reportPeriod={reportPeriod}
             onAddSkill={handleAddSkill}
@@ -245,6 +251,15 @@ export default function Home() {
           }}
           isLastStep={currentStepIndex === students.length - 1}
           disableNext={!isCurrentStudentComplete}
+        />
+      )}
+
+      {periodShareCat && (
+        <PeriodShareModal
+          categoryId={periodShareCat}
+          sourcePeriod={reportPeriod}
+          onClose={() => setPeriodShareCat(null)}
+          onConfirm={handleSharePeriods}
         />
       )}
 
