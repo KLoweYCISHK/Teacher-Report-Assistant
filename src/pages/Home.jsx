@@ -86,7 +86,7 @@ export default function Home() {
 
   const handleAddSkill = async (categoryId, skillName) => {
     if (!syncedSubject || categoryId === "Homework") return;
-    const existing = syncedSubject.skill_tabs?.[categoryId] || ["General"];
+    const existing = (syncedSubject.skill_tabs?.[categoryId] || []).filter(t => t !== "General");
     if (!existing.includes(skillName)) {
       await data.updateSubject(syncedSubject.id, {
         skill_tabs: { ...(syncedSubject.skill_tabs || {}), [categoryId]: [...existing, skillName] },
