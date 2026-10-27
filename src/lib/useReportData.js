@@ -187,8 +187,8 @@ export function useReportData() {
 
       if (sourceSubject?.skill_tabs?.[category]) {
         const targetSubject = subjects.find(s => s.id === targetSubjectId);
-        const existingTabs = targetSubject?.skill_tabs?.[category] || ["General"];
-        const merged = Array.from(new Set([...existingTabs, ...sourceSubject.skill_tabs[category]]));
+        const existingTabs = targetSubject?.skill_tabs?.[category] || [];
+        const merged = Array.from(new Set([...existingTabs, ...sourceSubject.skill_tabs[category]])).filter(t => t !== "General");
         await updateDoc(doc(db, COL.subjects, targetSubjectId), {
           skill_tabs: { ...(targetSubject?.skill_tabs || {}), [category]: merged },
         });
