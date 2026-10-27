@@ -4,6 +4,7 @@ import {
   getDocs, query, where, writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { PROGRESS_PERIODS } from "@/lib/constants";
 
 const COL = {
   departments: "departments",
@@ -158,7 +159,7 @@ export function useReportData() {
   const shareCommentsToSubjects = async (sourceSubjectId, category, targetSubjectIds) => {
     const sourceSubject = subjects.find(s => s.id === sourceSubjectId);
     const isSharedPeriod = category === "HPL" || category === "Language";
-    const periods = isSharedPeriod ? ["shared"] : ["Progress 2", "Progress 3"];
+    const periods = isSharedPeriod ? ["shared"] : PROGRESS_PERIODS;
 
     for (const targetSubjectId of targetSubjectIds) {
       for (const period of periods) {
