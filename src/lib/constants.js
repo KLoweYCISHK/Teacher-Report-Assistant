@@ -1,7 +1,8 @@
 export const HPL_LEVELS = ["Comments"];
 export const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
 
-export const REPORT_PERIODS = ["Progress 2", "Progress 3", "Mocks"];
+export const PROGRESS_PERIODS = ["Progress 2", "Progress 3", "Progress 4"];
+export const REPORT_PERIODS = [...PROGRESS_PERIODS, "Mocks"];
 
 export const DEFAULT_DEPARTMENTS = [
   "Social Studies", "English", "Maths", "Science", 
