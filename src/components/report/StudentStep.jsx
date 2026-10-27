@@ -142,12 +142,11 @@ export default function StudentStep({
                   <Globe className="w-3 h-3 mr-1" /> Share w/ Subjects
                 </Button>
               )}
-              {isPeriodShareable && PROGRESS_PERIODS.includes(reportPeriod) &&
-                PROGRESS_PERIODS.filter(p => p !== reportPeriod).map(target => (
-                  <Button key={target} variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id, target)}>
-                    <Share2 className="w-3 h-3 mr-1" /> {reportPeriod.replace("Progress ", "P")} → {target.replace("Progress ", "P")}
-                  </Button>
-                ))}
+              {isPeriodShareable && PROGRESS_PERIODS.includes(reportPeriod) && (
+                <Button variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id)}>
+                  <Share2 className="w-3 h-3 mr-1" /> Share with Progress Report
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
