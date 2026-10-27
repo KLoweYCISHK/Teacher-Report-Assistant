@@ -244,7 +244,7 @@ export default function ClassSetup({
           <Label className="flex items-center gap-2 text-sm font-bold">
             <Calendar className="w-4 h-4 text-accent" /> 3. Select Report Period
           </Label>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {REPORT_PERIODS.map(p => (
               <button
                 key={p}
