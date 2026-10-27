@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Share2, Briefcase } from "lucide-react";
+import { getCategoryLabel } from "@/lib/constants";
 
 export default function ShareModal({
   categoryId,
@@ -43,7 +44,7 @@ export default function ShareModal({
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const displayCat = categoryId === "HPL" ? "Approaches to Learning" : categoryId;
+  const displayCat = getCategoryLabel(categoryId);
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex justify-end">
