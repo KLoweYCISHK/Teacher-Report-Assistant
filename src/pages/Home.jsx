@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useReportData } from "@/lib/useReportData";
-import { getCommentPeriod } from "@/lib/constants";
+import { getCommentPeriod, getCategoryLabel } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 import Header from "@/components/report/Header";
@@ -106,7 +106,7 @@ export default function Home() {
 
   const handleDeleteAllComments = async (categoryId) => {
     if (!selectedSubject) return;
-    const displayCat = categoryId === "HPL" ? "Approaches to Learning" : categoryId;
+    const displayCat = getCategoryLabel(categoryId);
     const period = getEffectivePeriod(categoryId);
     if (!confirm(`Delete ALL ${displayCat} comments for ${selectedSubject.name} in ${period}?`)) return;
     await data.deleteAllCommentsInCategory(selectedSubject.id, categoryId, period);
