@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The app has no sign-in (same as the Base44 version): anyone with the link
+    // can read and edit the comment banks. Student names never reach the database.
+    match /departments/{id} { allow read, write: if true; }
+    match /subjects/{id}    { allow read, write: if true; }
+    match /comments/{id}    { allow read, write: if true; }
+    match /settings/{id}    { allow read, write: if true; }
+    // Everything else is locked.
+    match /{document=**}    { allow read, write: if false; }
+  }
+}

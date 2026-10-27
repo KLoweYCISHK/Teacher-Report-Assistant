@@ -1,0 +1,263 @@
+import React, { useState, useCallback, useEffect } from "react";
+import { useReportData } from "@/lib/useReportData";
+import { getCommentPeriod } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
+
+import Header from "@/components/report/Header";
+import ClassSetup from "@/components/report/ClassSetup";
+import StudentStep from "@/components/report/StudentStep.jsx";
+import ActionPanel from "@/components/report/ActionPanel";
+import ResultPanel from "@/components/report/ResultPanel.jsx";
+
+import ShareModal from "@/components/report/ShareModal";
+
+export default function Home() {
+  const data = useReportData();
+
+  const [selectedDept, setSelectedDept] = useState(null);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [reportPeriod, setReportPeriod] = useState("Progress 2");
+  const [students, setStudents] = useState([]);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [classData, setClassData] = useState({});
+  const [activeCategories, setActiveCategories] = useState([]);
+  const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
+  const [shareModalData, setShareModalData] = useState(null);
+
+  const isSetup = students.length === 0;
+  const isResultStep = !isSetup && currentStepIndex === students.length;
+  const activeStudent = !isSetup && !isResultStep ? students[currentStepIndex] : null;
+
+  const isCurrentStudentComplete = activeStudent
+    ? activeCategories.every(c => (classData[activeStudent]?.[c.id] || "").trim().length > 0)
+    : true;
+
+  // Resolve period for a category
+  const getEffectivePeriod = useCallback((categoryId) => {
+    const shared = getCommentPeriod(categoryId);
+    return shared || reportPeriod;
+  }, [reportPeriod]);
+
+  // Get comments for a specific category + skill tab
+  const getCommentsForCategory = useCallback((categoryId, skillTab = "General") => {
+    if (!selectedSubject) return [];
+    const period = getEffectivePeriod(categoryId);
+    return data.comments.filter(c =>
+      c.subject_id === selectedSubject.id &&
+      c.category === categoryId &&
+      c.period === period &&
+      (c.skill_tab || "General") === skillTab
+    );
+  }, [selectedSubject, data.comments, getEffectivePeriod]);
+
+  const handleStartClass = (names, categories) => {
+    setStudents(names);
+    setActiveCategories(categories);
+    const initData = {};
+    names.forEach(n => { initData[n] = {}; });
+    setClassData(initData);
+    setCurrentStepIndex(0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleUpdateStudent = (name, catId, val) => {
+    setClassData(prev => ({ ...prev, [name]: { ...prev[name], [catId]: val } }));
+  };
+
+  const handleAddComment = async (categoryId, level, text, skillTab = "General") => {
+    const period = getEffectivePeriod(categoryId);
+    await data.addComment(selectedSubject.id, categoryId, level, text, period, skillTab);
+  };
+
+  const handleBulkAddComments = async (categoryId, level, texts, skillTab = "General") => {
+    const period = getEffectivePeriod(categoryId);
+    await data.bulkAddComments(selectedSubject.id, categoryId, level, texts, period, skillTab);
+  };
+
+  const handleUpdateMockTitle = async (subjectId, idx, val) => {
+    const subj = data.subjects.find(s => s.id === subjectId);
+    if (!subj) return;
+    const titles = [...(subj.mock_titles || ["", "", "", "", ""])];
+    titles[idx] = val;
+    await data.updateSubject(subjectId, { mock_titles: titles });
+  };
+
+  const handleAddSkill = async (categoryId, skillName) => {
+    if (!syncedSubject || categoryId === "Homework") return;
+    const existing = syncedSubject.skill_tabs?.[categoryId] || ["General"];
+    if (!existing.includes(skillName)) {
+      await data.updateSubject(syncedSubject.id, {
+        skill_tabs: { ...(syncedSubject.skill_tabs || {}), [categoryId]: [...existing, skillName] },
+      });
+    }
+  };
+
+  const handleDeleteSkill = async (categoryId, skillName) => {
+    if (!syncedSubject || categoryId === "Homework") return;
+    const existing = syncedSubject.skill_tabs?.[categoryId] || [];
+    const filtered = existing.filter(s => s !== skillName);
+    const final = filtered;
+    await data.updateSubject(syncedSubject.id, {
+      skill_tabs: { ...(syncedSubject.skill_tabs || {}), [categoryId]: final },
+    });
+  };
+
+  const handleDeleteAllComments = async (categoryId) => {
+    if (!selectedSubject) return;
+    const displayCat = categoryId === "HPL" ? "Approaches to Learning" : categoryId;
+    const period = getEffectivePeriod(categoryId);
+    if (!confirm(`Delete ALL ${displayCat} comments for ${selectedSubject.name} in ${period}?`)) return;
+    await data.deleteAllCommentsInCategory(selectedSubject.id, categoryId, period);
+  };
+
+  const handleShareToSubjects = async (selectedSubjectIds) => {
+    if (!shareModalData || !selectedSubject) return;
+    await data.shareCommentsToSubjects(selectedSubject.id, shareModalData.catId, selectedSubjectIds);
+    alert(`Shared successfully to ${selectedSubjectIds.length} subjects!`);
+    setShareModalData(null);
+  };
+
+  const handleSharePeriod = async (categoryId, targetPeriod) => {
+    if (!selectedSubject) return;
+    const sourcePeriod = reportPeriod;
+    if (!confirm(`Replace all ${categoryId} comments in ${targetPeriod} with data from ${sourcePeriod}?`)) return;
+    await data.sharePeriodComments(selectedSubject.id, categoryId, sourcePeriod, targetPeriod);
+    alert(`Successfully copied to ${targetPeriod}!`);
+  };
+
+  const generateFinalBatch = () => {
+    let out = "";
+    students.forEach((s, index) => {
+      out += `${s}\n`;
+      const cmts = activeCategories
+        .map(c => (classData[s]?.[c.id] || "").trim())
+        .filter(Boolean);
+      if (cmts.length > 0) out += cmts.join("\n") + "\n";
+      if (index < students.length - 1) out += "\n-----------------------------------\n\n";
+    });
+    setFinalBatchPrompt(out);
+  };
+
+  const handleReturnStart = () => {
+    if (confirm("Return to start? Current student progress will be lost.")) {
+      setStudents([]);
+      setCurrentStepIndex(0);
+      setClassData({});
+      setSelectedSubject(null);
+    }
+  };
+
+  // Keep selectedSubject in sync with data.subjects changes (real-time updates)
+  const syncedSubject = selectedSubject ? data.subjects.find(s => s.id === selectedSubject.id) : null;
+
+  return (
+    <div className="min-h-screen bg-background pb-32">
+      <Header logoUrl={data.logoUrl} onSetLogo={data.setLogo} />
+      {data.loading && (
+        <p className="text-center text-sm text-muted-foreground mt-4 relative z-20">Loading comment banks…</p>
+      )}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
+        {isSetup && (
+          <ClassSetup
+            departments={data.departments}
+            subjects={data.subjects}
+            selectedDept={selectedDept}
+            setSelectedDept={setSelectedDept}
+            selectedSubject={syncedSubject}
+            setSelectedSubject={(s) => setSelectedSubject(s)}
+            reportPeriod={reportPeriod}
+            setReportPeriod={setReportPeriod}
+            onStartClass={handleStartClass}
+            onAddSubject={async (name, type, deptId) => {
+              const newSubj = await data.addSubject(name, type, deptId);
+              setSelectedSubject(newSubj);
+            }}
+            onDeleteSubject={async (id) => {
+              await data.deleteSubject(id);
+              setSelectedSubject(null);
+            }}
+            onAddDepartment={async (name) => {
+              const newDept = await data.addDepartment(name);
+              setSelectedDept(newDept);
+            }}
+            onDeleteDepartment={async (id) => {
+              await data.deleteDepartment(id);
+              setSelectedDept(null);
+              setSelectedSubject(null);
+            }}
+            onUpdateMockTitle={handleUpdateMockTitle}
+          />
+        )}
+
+        {activeStudent && syncedSubject && (
+          <StudentStep
+            key={activeStudent}
+            subject={syncedSubject}
+            student={activeStudent}
+            studentIndex={currentStepIndex}
+            totalStudents={students.length}
+            categories={activeCategories}
+            classData={classData}
+            comments={data.comments}
+            getCommentsForCategory={(catId, skill) => {
+              const period = getEffectivePeriod(catId);
+              const filtered = data.comments.filter(c =>
+                c.subject_id === syncedSubject.id &&
+                c.category === catId &&
+                (c.period === period || c.period === 'shared') &&
+                (c.skill_tab || "General") === (skill || "General")
+              );
+              // Deduplicate by text
+              const seen = new Set();
+              return filtered.filter(c => {
+                if (seen.has(c.text)) return false;
+                seen.add(c.text);
+                return true;
+              });
+            }}
+            onUpdateStudent={handleUpdateStudent}
+            onAddComment={handleAddComment}
+            onBulkAddComments={handleBulkAddComments}
+            onEditComment={async (id, newText) => await data.editComment(id, newText)}
+            onDeleteComment={async (id) => await data.deleteComment(id)}
+            onOpenShareModal={(catId) => setShareModalData({ catId })}
+            onSharePeriod={handleSharePeriod}
+            onDeleteAllComments={handleDeleteAllComments}
+            reportPeriod={reportPeriod}
+            onAddSkill={handleAddSkill}
+            onDeleteSkill={handleDeleteSkill}
+          />
+        )}
+
+        {isResultStep && (
+          <ResultPanel prompt={finalBatchPrompt} onStartOver={() => window.location.reload()} />
+        )}
+      </main>
+
+      {!isSetup && !isResultStep && (
+        <ActionPanel
+          onBack={() => setCurrentStepIndex(Math.max(0, currentStepIndex - 1))}
+          onReturnStart={handleReturnStart}
+          onNext={() => {
+            if (currentStepIndex === students.length - 1) generateFinalBatch();
+            setCurrentStepIndex(currentStepIndex + 1);
+            window.scrollTo(0, 0);
+          }}
+          isLastStep={currentStepIndex === students.length - 1}
+          disableNext={!isCurrentStudentComplete}
+        />
+      )}
+
+      {shareModalData && syncedSubject && (
+        <ShareModal
+          categoryId={shareModalData.catId}
+          currentSubjectId={syncedSubject.id}
+          subjects={data.subjects}
+          departments={data.departments}
+          onClose={() => setShareModalData(null)}
+          onConfirm={handleShareToSubjects}
+        />
+      )}
+    </div>
+  );
+}
