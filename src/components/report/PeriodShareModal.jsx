@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Share2, CalendarRange } from "lucide-react";
-import { PROGRESS_PERIODS } from "@/lib/constants";
+import { PROGRESS_PERIODS, getCategoryLabel } from "@/lib/constants";
 
 export default function PeriodShareModal({ categoryId, sourcePeriod, onClose, onConfirm }) {
   const [selected, setSelected] = useState([]);
@@ -13,7 +13,7 @@ export default function PeriodShareModal({ categoryId, sourcePeriod, onClose, on
   const toggle = (p) => setSelected(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
   const toggleAll = () => setSelected(allSelected ? [] : [...targets]);
 
-  const displayCat = categoryId === "HPL" ? "Approaches to Learning" : categoryId;
+  const displayCat = getCategoryLabel(categoryId);
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex justify-end">
