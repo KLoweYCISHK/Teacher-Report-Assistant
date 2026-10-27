@@ -45,7 +45,7 @@ export default function StudentStep({
   const isSkillCategory = activeCategory?.id !== "Homework";
 
   const currentSkillTabs = isSkillCategory
-    ? (subject?.skill_tabs?.[activeCategory?.id] || [])
+    ? (subject?.skill_tabs?.[activeCategory?.id] || []).filter(t => t !== "General")
     : ["General"];
 
   const getSkill = (catId) => activeSkills[catId] || "";
