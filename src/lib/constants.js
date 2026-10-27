@@ -50,12 +50,9 @@ export function getCommentPeriod(categoryId) {
 }
 
 export function getCategoryLevels(categoryId) {
-  if (categoryId === "HPL") return HPL_LEVELS;
-  if (PERFORMANCE_CATEGORY_IDS.includes(categoryId)) return PERFORMANCE_LEVELS;
-  return STANDARD_LEVELS;
+  return PERFORMANCE_LEVELS;
 }
 
 export function normaliseLevel(categoryId, level) {
-  if (PERFORMANCE_CATEGORY_IDS.includes(categoryId)) return LEGACY_LEVEL_MAP[level] || level;
-  return level;
+  return LEGACY_LEVEL_MAP[level] || level;
 }
