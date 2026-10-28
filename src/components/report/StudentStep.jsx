@@ -42,7 +42,8 @@ export default function StudentStep({
   const isLastCategory = activeCatIndex === categories.length - 1;
   // Sharing Attitude to Learning and Homework across subjects is admin-only
   const isSubjectShareable = false;
-  const isPeriodShareable = !["HPL", "Language"].includes(activeCategory?.id);
+  // Attitude to Learning and Homework are shared to every report by the admin
+  const isPeriodShareable = !["Language", ...ADMIN_CATEGORY_IDS].includes(activeCategory?.id);
   const isSkillCategory = !ADMIN_CATEGORY_IDS.includes(activeCategory?.id);
 
   const currentSkillTabs = isSkillCategory
