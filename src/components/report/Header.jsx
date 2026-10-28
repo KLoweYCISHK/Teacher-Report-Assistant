@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X } from "lucide-react";
+import { X, ShieldCheck } from "lucide-react";
 
 // Shrink the logo to a small PNG data URL so it can live in Firestore (no Storage bucket needed).
 function fileToSmallDataUrl(file, size = 160) {
@@ -23,7 +23,7 @@ function fileToSmallDataUrl(file, size = 160) {
   });
 }
 
-export default function Header({ logoUrl, onSetLogo }) {
+export default function Header({ logoUrl, onSetLogo, onOpenAdmin }) {
   const [isUploading, setIsUploading] = useState(false);
 
   const handleLogoUpload = async (event) => {
@@ -89,6 +89,14 @@ export default function Header({ logoUrl, onSetLogo }) {
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Teacher Report Assistant</h1>
           </div>
         </div>
+        {onOpenAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-primary-foreground/30 hover:bg-primary-foreground/10 transition-colors"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" /> Admin
+          </button>
+        )}
       </div>
     </div>
   );
