@@ -39,6 +39,11 @@ export const REQUIRED_CATEGORY_IDS = ["Assessment", "Performance2", "Improvement
 
 export const OPTIONAL_CATEGORIES = STANDARD_CATEGORIES.filter(c => !REQUIRED_CATEGORY_IDS.includes(c.id));
 
+// 1. and 2. Performance based share one comment bank and one set of tabs
+export function bankCategory(categoryId) {
+  return categoryId === "Performance2" ? "Assessment" : categoryId;
+}
+
 export function getCategoryLabel(categoryId) {
   return STANDARD_CATEGORIES.find(c => c.id === categoryId)?.label || categoryId;
 }
