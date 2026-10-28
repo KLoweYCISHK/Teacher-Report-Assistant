@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Settings, Save, X, Pencil, Trash2, CheckCircle } from "lucide-react";
-import { getCategoryLevels, normaliseLevel } from "@/lib/constants";
+import { getCategoryLevels, normaliseLevel, ADMIN_CATEGORY_IDS } from "@/lib/constants";
 
 export default function CommentCategory({
   category,
@@ -34,7 +34,7 @@ export default function CommentCategory({
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkMsg, setBulkMsg] = useState("");
 
-  const supportsSkills = category.id !== "Homework";
+  const supportsSkills = !ADMIN_CATEGORY_IDS.includes(category.id);
   const currentDisplaySkill = supportsSkills ? activeSkill : "General";
 
   useEffect(() => {
