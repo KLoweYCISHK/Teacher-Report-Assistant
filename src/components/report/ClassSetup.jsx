@@ -324,24 +324,6 @@ export default function ClassSetup({
               placeholder={"Alice Smith, A\nBob Jones, B\nCharlie Brown, C"}
               className="h-48 font-mono text-sm"
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => document.getElementById('excel-import-input')?.click()}
-              disabled={isImporting}
-            >
-              <Upload className="w-4 h-4" />
-              {isImporting ? "Importing..." : "Import from Excel"}
-            </Button>
-            <input
-              id="excel-import-input"
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={handleFileImport}
-              className="hidden"
-            />
           </div>
         </div>
 
