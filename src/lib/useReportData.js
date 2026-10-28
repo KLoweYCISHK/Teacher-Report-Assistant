@@ -213,31 +213,42 @@ export function useReportData() {
     if (commentsToCreate.length > 0) await bulkCreate(COL.comments, commentsToCreate);
   };
 
-  // Replace every subject's admin-category comments for the chosen periods with the admin bank
-  const publishAdminComments = async (periods) => {
+  // Copy the admin bank for sourcePeriod into each target period, for the admin bank itself
+  // and for every subject. Existing admin-category comments in those periods are replaced.
+  const publishAdminComments = async (sourcePeriod, targetPeriods) => {
     const allComments = toList(await getDocs(collection(db, COL.comments)));
     const allSubjects = toList(await getDocs(collection(db, COL.subjects)));
-    const toDelete = allComments.filter(c =>
-      c.subject_id !== ADMIN_SUBJECT_ID &&
+    const source = allComments.filter(c =>
+      c.subject_id === ADMIN_SUBJECT_ID &&
       ADMIN_CATEGORY_IDS.includes(c.category) &&
-      (periods.includes(c.period) || c.period === "shared")
+      c.period === sourcePeriod
     );
+
+    const toDelete = allComments.filter(c => {
+      if (!ADMIN_CATEGORY_IDS.includes(c.category)) return false;
+      if (c.subject_id === ADMIN_SUBJECT_ID) return c.period !== sourcePeriod && targetPeriods.includes(c.period);
+      return targetPeriods.includes(c.period) || c.period === "shared";
+    });
     await deleteRefs(toDelete.map(c => doc(db, COL.comments, c.id)));
 
-    const source = allComments.filter(c =>
-      c.subject_id === ADMIN_SUBJECT_ID && periods.includes(c.period)
-    );
+    const owners = [
+      ...allSubjects.map(s => s.id),
+      ADMIN_SUBJECT_ID,
+    ];
     const records = [];
-    allSubjects.forEach(s => {
-      source.forEach((c, i) => records.push({
-        subject_id: s.id,
-        category: c.category,
-        level: c.level,
-        text: c.text,
-        period: c.period,
-        skill_tab: "General",
-        sort_order: i,
-      }));
+    owners.forEach(ownerId => {
+      targetPeriods.forEach(period => {
+        if (ownerId === ADMIN_SUBJECT_ID && period === sourcePeriod) return;
+        source.forEach((c, i) => records.push({
+          subject_id: ownerId,
+          category: c.category,
+          level: c.level,
+          text: c.text,
+          period,
+          skill_tab: "General",
+          sort_order: i,
+        }));
+      });
     });
     if (records.length > 0) await bulkCreate(COL.comments, records);
   };
