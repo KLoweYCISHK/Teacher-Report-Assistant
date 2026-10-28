@@ -7,7 +7,7 @@ import {
   Copy, Check
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
-import { PROGRESS_PERIODS, bankCategory } from "@/lib/constants";
+import { PROGRESS_PERIODS, bankCategory, ADMIN_CATEGORY_IDS } from "@/lib/constants";
 
 export default function StudentStep({
   subject,
@@ -40,9 +40,10 @@ export default function StudentStep({
 
   const activeCategory = categories[activeCatIndex] || categories[0];
   const isLastCategory = activeCatIndex === categories.length - 1;
-  const isSubjectShareable = ["HPL", "Language", "Homework"].includes(activeCategory?.id);
+  // Sharing Attitude to Learning and Homework across subjects is admin-only
+  const isSubjectShareable = false;
   const isPeriodShareable = !["HPL", "Language"].includes(activeCategory?.id);
-  const isSkillCategory = activeCategory?.id !== "Homework";
+  const isSkillCategory = !ADMIN_CATEGORY_IDS.includes(activeCategory?.id);
 
   const currentSkillTabs = isSkillCategory
     ? (subject?.skill_tabs?.[bankCategory(activeCategory?.id)] || []).filter(t => t !== "General")
