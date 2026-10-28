@@ -7,7 +7,7 @@ import {
   Copy, Check
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
-import { PROGRESS_PERIODS } from "@/lib/constants";
+import { PROGRESS_PERIODS, bankCategory } from "@/lib/constants";
 
 export default function StudentStep({
   subject,
@@ -45,7 +45,7 @@ export default function StudentStep({
   const isSkillCategory = activeCategory?.id !== "Homework";
 
   const currentSkillTabs = isSkillCategory
-    ? (subject?.skill_tabs?.[activeCategory?.id] || []).filter(t => t !== "General")
+    ? (subject?.skill_tabs?.[bankCategory(activeCategory?.id)] || []).filter(t => t !== "General")
     : ["General"];
 
   const getSkill = (catId) => activeSkills[catId] || "";
