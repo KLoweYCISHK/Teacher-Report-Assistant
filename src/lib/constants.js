@@ -36,6 +36,12 @@ export const REQUIRED_CATEGORY_IDS = ["Assessment", "Performance2", "Improvement
 
 export const OPTIONAL_CATEGORIES = STANDARD_CATEGORIES.filter(c => !REQUIRED_CATEGORY_IDS.includes(c.id));
 
+// Admin-standardised categories: comments are written on the admin page and pushed to every subject
+export const ADMIN_SUBJECT_ID = "__admin__";
+export const ADMIN_PASSWORD = "YCHK1932";
+export const ADMIN_CATEGORY_IDS = ["HPL", "Homework"];
+export const ADMIN_CATEGORIES = STANDARD_CATEGORIES.filter(c => ADMIN_CATEGORY_IDS.includes(c.id));
+
 // 1. and 2. Performance based share one comment bank and one set of tabs
 export function bankCategory(categoryId) {
   return categoryId === "Performance2" ? "Assessment" : categoryId;
@@ -47,7 +53,7 @@ export function getCategoryLabel(categoryId) {
 
 // Determines whether a category's comments are shared across periods or period-specific
 export function getCommentPeriod(categoryId) {
-  if (categoryId === "HPL" || categoryId === "Language") return "shared";
+  if (categoryId === "Language") return "shared";
   return null; // means it uses the current report period
 }
 
