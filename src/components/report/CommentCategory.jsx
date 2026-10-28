@@ -21,6 +21,7 @@ export default function CommentCategory({
   onSwitchSkill,
   onNextCategory,
   isLastCategory,
+  usedElsewhere,
 }) {
   const levels = getCategoryLevels(category.id);
   const [activeLevel, setActiveLevel] = useState(levels[0] || null);
@@ -110,15 +111,20 @@ export default function CommentCategory({
             {skillTabs.map(skill => (
               <div key={skill} className="relative group">
                 <button
+                  title={usedElsewhere?.skill === skill ? "Already used in 1. Performance based" : undefined}
                   onClick={() => {
                     onSwitchSkill(skill);
                     setIsAdding(false);
                     setIsManaging(false);
                   }}
                   className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                    activeSkill === skill
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "bg-muted text-muted-foreground hover:bg-secondary"
+                    usedElsewhere?.skill === skill
+                      ? activeSkill === skill
+                        ? "bg-red-600 text-white shadow-md ring-2 ring-red-300"
+                        : "bg-red-100 text-red-700 border border-red-400 hover:bg-red-200"
+                      : activeSkill === skill
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "bg-muted text-muted-foreground hover:bg-secondary"
                   }`}
                 >
                   {skill}
@@ -155,6 +161,11 @@ export default function CommentCategory({
                 activeLevel === lvl
                   ? "bg-accent text-accent-foreground border-accent shadow-sm"
                   : "bg-card text-muted-foreground border-border hover:bg-muted"
+              } ${
+                usedElsewhere?.level && usedElsewhere.skill === currentDisplaySkill &&
+                normaliseLevel(category.id, usedElsewhere.level) === lvl
+                  ? "ring-2 ring-red-400"
+                  : ""
               }`}
             >
               {lvl}
@@ -274,6 +285,7 @@ export default function CommentCategory({
               )}
               {activeComments.map(c => {
                 const isSelected = currentValue === c.text;
+                const isUsedElsewhere = usedElsewhere && c.text.trim() === usedElsewhere.text.trim();
                 return (
                   <button
                     key={c.id}
@@ -281,13 +293,20 @@ export default function CommentCategory({
                     className={`w-full text-left text-sm px-4 py-3 rounded-lg border transition-all flex items-start gap-3 ${
                       isSelected
                         ? "bg-accent/10 border-accent text-foreground font-medium"
-                        : "bg-card border-border hover:bg-muted/60 text-muted-foreground hover:text-foreground"
+                        : isUsedElsewhere
+                          ? "bg-red-50 border-red-400 text-red-800 hover:bg-red-100"
+                          : "bg-card border-border hover:bg-muted/60 text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     <span className={`mt-0.5 w-4 h-4 flex-shrink-0 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-accent bg-accent" : "border-muted-foreground/40"}`}>
                       {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
                     </span>
-                    <span>{c.text}</span>
+                    <span>
+                      {isUsedElsewhere && (
+                        <span className="block text-[10px] font-bold uppercase tracking-wide text-red-600 mb-0.5">Already used in 1. Performance based</span>
+                      )}
+                      {c.text}
+                    </span>
                   </button>
                 );
               })}
