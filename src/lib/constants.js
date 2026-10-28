@@ -1,21 +1,18 @@
 export const HPL_LEVELS = ["Comments"];
 export const STANDARD_LEVELS = ["Excellent", "Good", "Average", "Poor"];
-export const PERFORMANCE_LEVELS = ["High Achievement", "Mid/High Achievement", "Mid/Low Achievement", "Under Achievement"];
+export const PERFORMANCE_LEVELS = ["High Achieving", "Mid/High Achieving", "Mid/Low Achieving", "Under Achieving"];
 export const PERFORMANCE_CATEGORY_IDS = ["Assessment", "Performance2"];
 
 // Comments saved before the level rename still show under the new names
 export const LEGACY_LEVEL_MAP = {
-  Excellent: "High Achievement",
-  Good: "Mid/High Achievement",
-  Average: "Mid/Low Achievement",
-  Poor: "Under Achievement",
-};
-
-export const LEVEL_DESCRIPTORS = {
-  "High Achievement": ["Critically evaluates", "Demonstrates mastery", "Exhibits exceptional insight"],
-  "Mid/High Achievement": ["Effectively evaluates", "Consistently applies", "Demonstrates strong competence"],
-  "Mid/Low Achievement": ["Shows developing competence", "Regularly contributes", "Shows a sound understanding"],
-  "Under Achievement": ["Is beginning to identify", "Requires structured guidance", "Requires support to describe"],
+  Excellent: "High Achieving",
+  Good: "Mid/High Achieving",
+  Average: "Mid/Low Achieving",
+  Poor: "Under Achieving",
+  "High Achievement": "High Achieving",
+  "Mid/High Achievement": "Mid/High Achieving",
+  "Mid/Low Achievement": "Mid/Low Achieving",
+  "Under Achievement": "Under Achieving",
 };
 
 export const PROGRESS_PERIODS = ["Progress 2", "Progress 3", "Progress 4"];
