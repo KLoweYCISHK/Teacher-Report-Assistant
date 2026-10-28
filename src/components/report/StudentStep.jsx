@@ -52,6 +52,19 @@ export default function StudentStep({
 
   const getSkill = (catId) => activeSkills[catId] || "";
 
+  // On 2. Performance based, flag the tab, level and comment already used in 1. Performance based
+  const firstPerformanceText = activeCategory?.id === "Performance2"
+    ? (classData[student]?.Assessment || "").trim()
+    : "";
+  let usedElsewhere = null;
+  if (firstPerformanceText) {
+    for (const tab of currentSkillTabs) {
+      const match = getCommentsForCategory("Assessment", tab).find(c => c.text.trim() === firstPerformanceText);
+      if (match) { usedElsewhere = { text: match.text, skill: tab, level: match.level }; break; }
+    }
+    if (!usedElsewhere) usedElsewhere = { text: firstPerformanceText, skill: null, level: null };
+  }
+
   const activeCommentTexts = categories
     .map(c => (classData[student]?.[c.id] || "").trim())
     .filter(Boolean);
@@ -170,6 +183,7 @@ export default function StudentStep({
             onDeleteSkill={(skill) => onDeleteSkill(activeCategory.id, skill)}
             onNextCategory={!isLastCategory ? handleNextCategory : undefined}
             isLastCategory={isLastCategory}
+            usedElsewhere={usedElsewhere}
           />
         </CardContent>
       </Card>
