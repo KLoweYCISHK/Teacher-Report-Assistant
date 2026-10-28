@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Settings, Save, X, Pencil, Trash2, CheckCircle, Eye, EyeOff } from "lucide-react";
-import { getCategoryLevels, normaliseLevel, LEVEL_DESCRIPTORS } from "@/lib/constants";
+import { Plus, Settings, Save, X, Pencil, Trash2, CheckCircle } from "lucide-react";
+import { getCategoryLevels, normaliseLevel } from "@/lib/constants";
 
 export default function CommentCategory({
   category,
@@ -33,8 +33,6 @@ export default function CommentCategory({
   const [editText, setEditText] = useState("");
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkMsg, setBulkMsg] = useState("");
-  const [showDescriptors, setShowDescriptors] = useState(false);
-  const hasDescriptors = levels.some(l => LEVEL_DESCRIPTORS[l]);
 
   const supportsSkills = category.id !== "Homework";
   const currentDisplaySkill = supportsSkills ? activeSkill : "General";
@@ -148,7 +146,6 @@ export default function CommentCategory({
 
       {/* Level Buttons */}
       {levels.length > 1 && (
-        <div className="space-y-2">
         <div className="flex flex-wrap gap-2 items-center">
           {levels.map(lvl => (
             <button
@@ -163,30 +160,6 @@ export default function CommentCategory({
               {lvl}
             </button>
           ))}
-          {hasDescriptors && (
-            <button
-              onClick={() => setShowDescriptors(v => !v)}
-              className={`p-1.5 rounded-full border transition-all ${
-                showDescriptors ? "bg-accent/10 text-accent border-accent" : "text-muted-foreground border-border hover:bg-muted"
-              }`}
-              title={showDescriptors ? "Hide level descriptors" : "Show level descriptors"}
-              aria-label="Toggle level descriptors"
-            >
-              {showDescriptors ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          )}
-        </div>
-        {hasDescriptors && showDescriptors && (
-          <div className="bg-card border border-border rounded-lg p-3 text-xs space-y-1.5">
-            <p className="text-muted-foreground">Comments should be differentiated by ability. Suggested terms for each level:</p>
-            {levels.filter(l => LEVEL_DESCRIPTORS[l]).map(l => (
-              <p key={l}>
-                <span className={`font-bold ${l === activeLevel ? "text-accent" : "text-destructive"}`}>{l}:</span>{" "}
-                {LEVEL_DESCRIPTORS[l].map(t => `“${t}”`).join(", ")}
-              </p>
-            ))}
-          </div>
-        )}
         </div>
       )}
 
