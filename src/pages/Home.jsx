@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useReportData } from "@/lib/useReportData";
-import { getCommentPeriod, getCategoryLabel } from "@/lib/constants";
+import { getCommentPeriod, getCategoryLabel, bankCategory } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 import Header from "@/components/report/Header";
@@ -67,11 +67,13 @@ export default function Home() {
   };
 
   const handleAddComment = async (categoryId, level, text, skillTab = "General") => {
+    categoryId = bankCategory(categoryId);
     const period = getEffectivePeriod(categoryId);
     await data.addComment(selectedSubject.id, categoryId, level, text, period, skillTab);
   };
 
   const handleBulkAddComments = async (categoryId, level, texts, skillTab = "General") => {
+    categoryId = bankCategory(categoryId);
     const period = getEffectivePeriod(categoryId);
     await data.bulkAddComments(selectedSubject.id, categoryId, level, texts, period, skillTab);
   };
@@ -85,6 +87,7 @@ export default function Home() {
   };
 
   const handleAddSkill = async (categoryId, skillName) => {
+    categoryId = bankCategory(categoryId);
     if (!syncedSubject || categoryId === "Homework") return;
     const existing = (syncedSubject.skill_tabs?.[categoryId] || []).filter(t => t !== "General");
     if (!existing.includes(skillName)) {
@@ -95,6 +98,7 @@ export default function Home() {
   };
 
   const handleDeleteSkill = async (categoryId, skillName) => {
+    categoryId = bankCategory(categoryId);
     if (!syncedSubject || categoryId === "Homework") return;
     const existing = syncedSubject.skill_tabs?.[categoryId] || [];
     const filtered = existing.filter(s => s !== skillName);
@@ -105,6 +109,7 @@ export default function Home() {
   };
 
   const handleDeleteAllComments = async (categoryId) => {
+    categoryId = bankCategory(categoryId);
     if (!selectedSubject) return;
     const displayCat = getCategoryLabel(categoryId);
     const period = getEffectivePeriod(categoryId);
@@ -206,6 +211,7 @@ export default function Home() {
             classData={classData}
             comments={data.comments}
             getCommentsForCategory={(catId, skill) => {
+              catId = bankCategory(catId);
               const period = getEffectivePeriod(catId);
               const filtered = data.comments.filter(c =>
                 c.subject_id === syncedSubject.id &&
@@ -226,8 +232,8 @@ export default function Home() {
             onBulkAddComments={handleBulkAddComments}
             onEditComment={async (id, newText) => await data.editComment(id, newText)}
             onDeleteComment={async (id) => await data.deleteComment(id)}
-            onOpenShareModal={(catId) => setShareModalData({ catId })}
-            onSharePeriod={(catId) => setPeriodShareCat(catId)}
+            onOpenShareModal={(catId) => setShareModalData({ catId: bankCategory(catId) })}
+            onSharePeriod={(catId) => setPeriodShareCat(bankCategory(catId))}
             onDeleteAllComments={handleDeleteAllComments}
             reportPeriod={reportPeriod}
             onAddSkill={handleAddSkill}
