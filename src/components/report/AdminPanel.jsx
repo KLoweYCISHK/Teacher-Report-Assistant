@@ -10,7 +10,7 @@ export default function AdminPanel({ data, subjectCount, onExit }) {
   const [period, setPeriod] = useState(PROGRESS_PERIODS[0]);
   const [catIndex, setCatIndex] = useState(0);
   const [showShare, setShowShare] = useState(false);
-  const [targets, setTargets] = useState([]);
+  const [targets, setTargets] = useState([...PROGRESS_PERIODS]);
   const [sharing, setSharing] = useState(false);
 
   const category = ADMIN_CATEGORIES[catIndex];
@@ -24,17 +24,19 @@ export default function AdminPanel({ data, subjectCount, onExit }) {
 
   const handleShare = async () => {
     if (targets.length === 0) return;
+    const hasSource = data.comments.some(c => c.subject_id === ADMIN_SUBJECT_ID && c.period === period);
+    if (!hasSource) { alert(`There are no ${period} comments to share yet.`); return; }
     const ordered = PROGRESS_PERIODS.filter(p => targets.includes(p));
     const list = ordered.join(", ");
     if (!confirm(
-      `Replace the Attitude to Learning and Homework comments in ALL ${subjectCount} subjects for ${list} with the admin comments?\n\nExisting comments in those categories will be removed.`
+      `Share the ${period} Attitude to Learning and Homework comments to ALL ${subjectCount} subjects for ${list}?\n\nExisting comments in those categories for ${list} will be replaced.`
     )) return;
     setSharing(true);
     try {
-      await data.publishAdminComments(ordered);
+      await data.publishAdminComments(period, ordered);
       alert(`Shared with all subjects for ${list}.`);
       setShowShare(false);
-      setTargets([]);
+      setTargets([...PROGRESS_PERIODS]);
     } catch (e) {
       console.error(e);
       alert("Sharing failed. Please try again.");
@@ -104,7 +106,7 @@ export default function AdminPanel({ data, subjectCount, onExit }) {
               variant="outline"
               size="sm"
               className="text-purple-700 text-xs"
-              onClick={() => setShowShare(true)}
+              onClick={() => { setTargets([...PROGRESS_PERIODS]); setShowShare(true); }}
             >
               <Globe className="w-3 h-3 mr-1" /> Share with All Subjects
             </Button>
@@ -145,8 +147,8 @@ export default function AdminPanel({ data, subjectCount, onExit }) {
             </div>
             <div className="p-6 flex-1 overflow-y-auto space-y-4">
               <p className="text-sm text-muted-foreground">
-                Sends the admin Attitude to Learning and Homework comments to every subject. For each report you pick,
-                each subject's existing comments in those two categories are replaced, so nothing is duplicated.
+                Sends the {period} Attitude to Learning and Homework comments to every subject, for each progress
+                report you tick. Existing comments in those two categories are replaced, so nothing is duplicated.
               </p>
               <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer bg-muted/50">
                 <Checkbox
