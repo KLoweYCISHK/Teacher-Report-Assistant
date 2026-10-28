@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useReportData } from "@/lib/useReportData";
-import { getCommentPeriod, getCategoryLabel, bankCategory } from "@/lib/constants";
+import { getCommentPeriod, getCategoryLabel, bankCategory, ADMIN_PASSWORD } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 import Header from "@/components/report/Header";
@@ -11,6 +11,7 @@ import ResultPanel from "@/components/report/ResultPanel.jsx";
 
 import ShareModal from "@/components/report/ShareModal";
 import PeriodShareModal from "@/components/report/PeriodShareModal";
+import AdminPanel from "@/components/report/AdminPanel.jsx";
 
 export default function Home() {
   const data = useReportData();
@@ -25,6 +26,14 @@ export default function Home() {
   const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
   const [shareModalData, setShareModalData] = useState(null);
   const [periodShareCat, setPeriodShareCat] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const handleOpenAdmin = () => {
+    const pw = prompt("Enter the admin password:");
+    if (pw === null) return;
+    if (pw === ADMIN_PASSWORD) setIsAdmin(true);
+    else alert("Incorrect password.");
+  };
 
   const isSetup = students.length === 0;
   const isResultStep = !isSetup && currentStepIndex === students.length;
@@ -163,12 +172,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <Header logoUrl={data.logoUrl} onSetLogo={data.setLogo} />
+      <Header
+        logoUrl={data.logoUrl}
+        onSetLogo={data.setLogo}
+        onOpenAdmin={isSetup && !isAdmin ? handleOpenAdmin : null}
+      />
       {data.loading && (
         <p className="text-center text-sm text-muted-foreground mt-4 relative z-20">Loading comment banks…</p>
       )}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
-        {isSetup && (
+        {isAdmin && (
+          <AdminPanel data={data} subjectCount={data.subjects.length} onExit={() => setIsAdmin(false)} />
+        )}
+
+        {isSetup && !isAdmin && (
           <ClassSetup
             departments={data.departments}
             subjects={data.subjects}
