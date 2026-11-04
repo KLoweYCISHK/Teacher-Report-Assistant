@@ -93,12 +93,12 @@ export default function StudentStep({
 
   return (
     <div className="space-y-6">
-      {/* Student Header */}
-      <div className="bg-primary text-primary-foreground p-6 rounded-xl shadow-lg border-l-4 border-l-accent">
-        <Badge variant="secondary" className="mb-2 text-xs font-bold uppercase tracking-wide">
+      {/* Sticky student name bar */}
+      <div className="sticky top-0 z-40 bg-primary text-primary-foreground px-5 py-2.5 rounded-b-xl shadow-lg border-l-4 border-l-accent flex items-center gap-3">
+        <Badge variant="secondary" className="text-xs font-bold uppercase tracking-wide">
           Student {studentIndex + 1} of {totalStudents}
         </Badge>
-        <h2 className="text-3xl font-extrabold">{student}</h2>
+        <h2 className="text-xl font-extrabold">{student}</h2>
       </div>
 
       {/* Category Progress Tabs */}
