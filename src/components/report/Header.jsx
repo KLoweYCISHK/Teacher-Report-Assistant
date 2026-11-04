@@ -51,7 +51,7 @@ export default function Header({ logoUrl, onSetLogo, onOpenAdmin }) {
 
   return (
     <div className="bg-primary text-primary-foreground pt-8 pb-16 px-6">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div className="max-w-[1760px] mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="relative group">
             {logoUrl ? (
