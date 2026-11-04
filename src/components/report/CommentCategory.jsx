@@ -331,7 +331,7 @@ export default function CommentCategory({
 
       {/* Next Category button */}
       {onNextCategory && (
-        <div className="flex justify-end pt-2">
+        <div className="sticky bottom-24 z-30 flex justify-end pt-2">
           <Button
             onClick={onNextCategory}
             disabled={!currentValue}
