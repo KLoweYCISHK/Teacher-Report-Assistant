@@ -92,3 +92,8 @@
     @apply bg-background text-foreground font-body;
   }
 }
+
+/* Larger base text size across the app */
+html {
+  font-size: 112.5%;
+}
