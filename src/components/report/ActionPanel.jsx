@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, RotateCcw, CheckCircle, X } from "lucide-react";
 export default function ActionPanel({ onBack, onNext, onReturnStart, isLastStep, disableNext }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-50">
-      <div className="max-w-5xl mx-auto flex justify-between gap-4">
+      <div className="max-w-7xl mx-auto flex justify-between gap-4">
         <div className="flex gap-2">
           <Button variant="outline" className="text-destructive" onClick={onReturnStart}>
             <RotateCcw className="w-4 h-4 mr-2" /> Start Over
