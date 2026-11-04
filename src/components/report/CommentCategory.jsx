@@ -117,7 +117,7 @@ export default function CommentCategory({
                     setIsAdding(false);
                     setIsManaging(false);
                   }}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
                     usedElsewhere?.skill === skill
                       ? activeSkill === skill
                         ? "bg-red-600 text-white shadow-md ring-2 ring-red-300"
@@ -157,7 +157,7 @@ export default function CommentCategory({
             <button
               key={lvl}
               onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+              className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
                 activeLevel === lvl
                   ? "bg-accent text-accent-foreground border-accent shadow-sm"
                   : "bg-card text-muted-foreground border-border hover:bg-muted"
@@ -178,7 +178,7 @@ export default function CommentCategory({
       {activeLevel && (
         <div className="bg-accent/5 p-4 rounded-lg border border-accent/20 space-y-3">
           <div className="flex justify-between items-center border-b border-accent/20 pb-2">
-            <span className="text-xs font-bold text-primary uppercase">
+            <span className="text-sm font-bold text-primary uppercase">
               {supportsSkills && currentDisplaySkill !== "General" ? `${currentDisplaySkill} · ` : ""}
               {levels.length > 1 ? `${activeLevel} Comments` : "Comments"}
             </span>
@@ -241,7 +241,7 @@ export default function CommentCategory({
           )}
 
           {isManaging ? (
-            <div className="bg-card border border-border rounded-lg p-2 max-h-48 overflow-y-auto">
+            <div className="bg-card border border-border rounded-lg p-2 max-h-96 overflow-y-auto">
               {activeComments.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-2">No comments yet.</p>
               )}
@@ -279,7 +279,7 @@ export default function CommentCategory({
               ))}
             </div>
           ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="space-y-2 max-h-[34rem] overflow-y-auto">
               {activeComments.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">No comments available. Add some above.</p>
               )}
@@ -290,7 +290,7 @@ export default function CommentCategory({
                   <button
                     key={c.id}
                     onClick={() => handleSelectComment(c.text)}
-                    className={`w-full text-left text-sm px-4 py-3 rounded-lg border transition-all flex items-start gap-3 ${
+                    className={`w-full text-left text-base px-5 py-4 rounded-lg border transition-all flex items-start gap-3 ${
                       isSelected
                         ? "bg-accent/10 border-accent text-foreground font-medium"
                         : isUsedElsewhere
@@ -321,7 +321,7 @@ export default function CommentCategory({
           <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-green-700 uppercase mb-1">Selected Comment</p>
-            <p className="text-sm text-green-900">{currentValue}</p>
+            <p className="text-base text-green-900">{currentValue}</p>
           </div>
           <button onClick={() => onChange("")} className="text-green-600 hover:text-destructive ml-2 flex-shrink-0">
             <X className="w-4 h-4" />
