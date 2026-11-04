@@ -114,7 +114,7 @@ export default function StudentStep({
                 <button
                   key={cat.id}
                   onClick={() => setActiveCatIndex(idx)}
-                  className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${
+                  className={`px-5 py-2.5 rounded-lg font-bold text-base flex items-center gap-2 transition-all ${
                     isActive
                       ? "bg-accent text-accent-foreground shadow-md ring-2 ring-accent ring-offset-2"
                       : hasData
@@ -135,7 +135,7 @@ export default function StudentStep({
       <Card>
         <CardHeader className="bg-muted/50 border-b">
           <div className="flex justify-between items-center flex-wrap gap-3">
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-xl flex items-center gap-2">
               <FileText className="w-5 h-5 text-accent" /> {activeCategory.label}
             </CardTitle>
             <div className="flex gap-2 flex-wrap">
@@ -205,7 +205,7 @@ export default function StudentStep({
             </Button>
           )}
         </div>
-        <div className="bg-card p-4 rounded-lg border border-accent/10 text-sm leading-relaxed shadow-sm">
+        <div className="bg-card p-4 rounded-lg border border-accent/10 text-base leading-relaxed shadow-sm">
           {activeCommentTexts.length > 0 ? (
             <ul className="list-disc list-outside pl-5 space-y-1.5">
               {activeCommentTexts.map((txt, idx) => (
