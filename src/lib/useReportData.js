@@ -4,7 +4,7 @@ import {
   getDocs, query, where, writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { PROGRESS_PERIODS, ADMIN_SUBJECT_ID, ADMIN_CATEGORY_IDS } from "@/lib/constants";
+import { REPORT_PERIODS, ADMIN_SUBJECT_ID, ADMIN_CATEGORY_IDS } from "@/lib/constants";
 
 const COL = {
   departments: "departments",
@@ -53,6 +53,7 @@ export function useReportData() {
   const [subjects, setSubjects] = useState([]);
   const [comments, setComments] = useState([]);
   const [logoUrl, setLogoUrl] = useState(null);
+  const [adminTabs, setAdminTabsState] = useState({});
   const [loaded, setLoaded] = useState({ d: false, s: false, c: false });
 
   // Live updates for everything (replaces Base44 list + subscribe)
@@ -72,6 +73,9 @@ export function useReportData() {
       }),
       onSnapshot(doc(db, COL.settings, "logo"), snap => {
         setLogoUrl(snap.exists() ? snap.data().value || null : null);
+      }),
+      onSnapshot(doc(db, COL.settings, "admin"), snap => {
+        setAdminTabsState(snap.exists() ? snap.data().skill_tabs || {} : {});
       }),
     ];
     return () => unsubs.forEach(u => u());
@@ -156,43 +160,50 @@ export function useReportData() {
     await deleteWhere(COL.comments, { subject_id: subjectId, category, period });
   };
 
-  const shareCommentsToSubjects = async (sourceSubjectId, category, targetSubjectIds) => {
+  // Copy one or more categories (all report periods and tabs) from one subject to others.
+  // Comments the target already has are skipped, so nothing is duplicated.
+  const shareCommentsToSubjects = async (sourceSubjectId, categoryIds, targetSubjectIds) => {
+    const cats = Array.isArray(categoryIds) ? categoryIds : [categoryIds];
     const sourceSubject = subjects.find(s => s.id === sourceSubjectId);
-    const isSharedPeriod = category === "HPL" || category === "Language";
-    const periods = isSharedPeriod ? ["shared"] : PROGRESS_PERIODS;
+    const periods = [...REPORT_PERIODS, "shared"];
 
     for (const targetSubjectId of targetSubjectIds) {
-      for (const period of periods) {
-        const sourceComments = comments.filter(c =>
-          c.subject_id === sourceSubjectId && c.category === category && c.period === period
-        );
-        const existingTargetComments = comments.filter(c =>
-          c.subject_id === targetSubjectId && c.category === category && c.period === period
-        );
-        const commentsToCreate = sourceComments
-          .filter(sc => !existingTargetComments.some(ec =>
-            ec.text === sc.text && ec.level === sc.level &&
-            (ec.skill_tab || "General") === (sc.skill_tab || "General")))
-          .map(sc => ({
-            subject_id: targetSubjectId,
-            category: sc.category,
-            level: sc.level,
-            text: sc.text,
-            period: sc.period,
-            skill_tab: sc.skill_tab || "General",
-            sort_order: 0,
-          }));
-        if (commentsToCreate.length > 0) await bulkCreate(COL.comments, commentsToCreate);
+      const records = [];
+      for (const category of cats) {
+        for (const period of periods) {
+          const sourceComments = comments.filter(c =>
+            c.subject_id === sourceSubjectId && c.category === category && c.period === period
+          );
+          const existingTargetComments = comments.filter(c =>
+            c.subject_id === targetSubjectId && c.category === category && c.period === period
+          );
+          sourceComments
+            .filter(sc => !existingTargetComments.some(ec =>
+              ec.text === sc.text && ec.level === sc.level &&
+              (ec.skill_tab || "General") === (sc.skill_tab || "General")))
+            .forEach(sc => records.push({
+              subject_id: targetSubjectId,
+              category: sc.category,
+              level: sc.level,
+              text: sc.text,
+              period: sc.period,
+              skill_tab: sc.skill_tab || "General",
+              sort_order: sc.sort_order ?? 0,
+            }));
+        }
       }
+      if (records.length > 0) await bulkCreate(COL.comments, records);
 
-      if (sourceSubject?.skill_tabs?.[category]) {
-        const targetSubject = subjects.find(s => s.id === targetSubjectId);
-        const existingTabs = targetSubject?.skill_tabs?.[category] || [];
-        const merged = Array.from(new Set([...existingTabs, ...sourceSubject.skill_tabs[category]])).filter(t => t !== "General");
-        await updateDoc(doc(db, COL.subjects, targetSubjectId), {
-          skill_tabs: { ...(targetSubject?.skill_tabs || {}), [category]: merged },
-        });
-      }
+      const targetSubject = subjects.find(s => s.id === targetSubjectId);
+      const tabs = { ...(targetSubject?.skill_tabs || {}) };
+      let tabsChanged = false;
+      cats.forEach(category => {
+        const sourceTabs = sourceSubject?.skill_tabs?.[category];
+        if (!sourceTabs?.length) return;
+        tabs[category] = Array.from(new Set([...(tabs[category] || []), ...sourceTabs])).filter(t => t !== "General");
+        tabsChanged = true;
+      });
+      if (tabsChanged) await updateDoc(doc(db, COL.subjects, targetSubjectId), { skill_tabs: tabs });
     }
   };
 
@@ -213,44 +224,51 @@ export function useReportData() {
     if (commentsToCreate.length > 0) await bulkCreate(COL.comments, commentsToCreate);
   };
 
-  // Copy the admin bank for sourcePeriod into each target period, for the admin bank itself
-  // and for every subject. Existing admin-category comments in those periods are replaced.
-  const publishAdminComments = async (sourcePeriod, targetPeriods) => {
+  // PLT Generated comments: replace each target subject's Attitude to Learning and Homework
+  // banks (every report period) with the admin bank, and mark the subject as using PLT comments.
+  const applyPltComments = async (targetSubjectIds) => {
     const allComments = toList(await getDocs(collection(db, COL.comments)));
     const allSubjects = toList(await getDocs(collection(db, COL.subjects)));
     const source = allComments.filter(c =>
-      c.subject_id === ADMIN_SUBJECT_ID &&
-      ADMIN_CATEGORY_IDS.includes(c.category) &&
-      c.period === sourcePeriod
+      c.subject_id === ADMIN_SUBJECT_ID && ADMIN_CATEGORY_IDS.includes(c.category)
     );
+    if (source.length === 0) throw new Error("NO_PLT_COMMENTS");
 
-    const toDelete = allComments.filter(c => {
-      if (!ADMIN_CATEGORY_IDS.includes(c.category)) return false;
-      if (c.subject_id === ADMIN_SUBJECT_ID) return c.period !== sourcePeriod && targetPeriods.includes(c.period);
-      return targetPeriods.includes(c.period) || c.period === "shared";
-    });
+    const toDelete = allComments.filter(c =>
+      targetSubjectIds.includes(c.subject_id) && ADMIN_CATEGORY_IDS.includes(c.category)
+    );
     await deleteRefs(toDelete.map(c => doc(db, COL.comments, c.id)));
 
-    const owners = [
-      ...allSubjects.map(s => s.id),
-      ADMIN_SUBJECT_ID,
-    ];
     const records = [];
-    owners.forEach(ownerId => {
-      targetPeriods.forEach(period => {
-        if (ownerId === ADMIN_SUBJECT_ID && period === sourcePeriod) return;
-        source.forEach((c, i) => records.push({
-          subject_id: ownerId,
-          category: c.category,
-          level: c.level,
-          text: c.text,
-          period,
-          skill_tab: "General",
-          sort_order: i,
-        }));
-      });
+    targetSubjectIds.forEach(subjectId => {
+      source.forEach(c => records.push({
+        subject_id: subjectId,
+        category: c.category,
+        level: c.level,
+        text: c.text,
+        period: c.period,
+        skill_tab: c.skill_tab || "General",
+        sort_order: c.sort_order ?? 0,
+      }));
     });
-    if (records.length > 0) await bulkCreate(COL.comments, records);
+    await bulkCreate(COL.comments, records);
+
+    for (const subjectId of targetSubjectIds) {
+      const subj = allSubjects.find(s => s.id === subjectId);
+      const skillTabs = { ...(subj?.skill_tabs || {}) };
+      ADMIN_CATEGORY_IDS.forEach(cat => {
+        if (adminTabs[cat]?.length) skillTabs[cat] = [...adminTabs[cat]];
+        else delete skillTabs[cat];
+      });
+      await updateDoc(doc(db, COL.subjects, subjectId), { skill_tabs: skillTabs, atl_source: "plt" });
+    }
+  };
+
+  // Custom tabs for the admin (PLT) bank
+  const setAdminTabs = async (categoryId, tabs) => {
+    await setDoc(doc(db, COL.settings, "admin"), {
+      skill_tabs: { ...adminTabs, [categoryId]: tabs.filter(t => t !== "General") },
+    }, { merge: true });
   };
 
   const setLogo = async (value) => {
@@ -277,7 +295,9 @@ export function useReportData() {
     deleteAllCommentsInCategory,
     shareCommentsToSubjects,
     sharePeriodComments,
-    publishAdminComments,
+    applyPltComments,
+    adminTabs,
+    setAdminTabs,
     setLogo,
     reload: () => {}, // live updates make manual reloads unnecessary
   };

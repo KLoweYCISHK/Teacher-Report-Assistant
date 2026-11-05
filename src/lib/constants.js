@@ -42,6 +42,21 @@ export const ADMIN_PASSWORD = "YCHK1932";
 export const ADMIN_CATEGORY_IDS = ["HPL", "Homework"];
 export const ADMIN_CATEGORIES = STANDARD_CATEGORIES.filter(c => ADMIN_CATEGORY_IDS.includes(c.id));
 
+// Categories copied by "Share with Progress Report" (2. Performance based shares the Assessment bank)
+export const PERIOD_SHARE_CATEGORY_IDS = ["HPL", "Homework", "Assessment", "Improvement"];
+
+// Homework has no custom tabs
+export function supportsTabs(categoryId) {
+  return categoryId !== "Homework";
+}
+
+// Attitude to Learning always keeps a "General" tab so comments saved before tabs existed still show
+export function getTabList(categoryId, customTabs = []) {
+  if (!supportsTabs(categoryId)) return ["General"];
+  const custom = customTabs.filter(t => t !== "General");
+  return categoryId === "HPL" ? ["General", ...custom] : custom;
+}
+
 // 1. and 2. Performance based share one comment bank and one set of tabs
 export function bankCategory(categoryId) {
   return categoryId === "Performance2" ? "Assessment" : categoryId;
@@ -57,10 +72,24 @@ export function getCommentPeriod(categoryId) {
   return null; // means it uses the current report period
 }
 
+// Attitude to Learning and Homework use frequency levels
+export const FREQUENCY_LEVELS = ["Always", "Regularly", "Sometimes", "Rarely"];
+export const FREQUENCY_CATEGORY_IDS = ["HPL", "Homework"];
+
+// Comments saved under the old achievement levels still show under the matching frequency level
+const FREQUENCY_LEVEL_MAP = {
+  "High Achieving": "Always",
+  "Mid/High Achieving": "Regularly",
+  "Mid/Low Achieving": "Sometimes",
+  "Under Achieving": "Rarely",
+};
+
 export function getCategoryLevels(categoryId) {
-  return PERFORMANCE_LEVELS;
+  return FREQUENCY_CATEGORY_IDS.includes(categoryId) ? FREQUENCY_LEVELS : PERFORMANCE_LEVELS;
 }
 
 export function normaliseLevel(categoryId, level) {
-  return LEGACY_LEVEL_MAP[level] || level;
+  const mapped = LEGACY_LEVEL_MAP[level] || level;
+  if (FREQUENCY_CATEGORY_IDS.includes(categoryId)) return FREQUENCY_LEVEL_MAP[mapped] || mapped;
+  return mapped;
 }

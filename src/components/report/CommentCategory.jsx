@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Settings, Save, X, Pencil, Trash2, CheckCircle } from "lucide-react";
-import { getCategoryLevels, normaliseLevel, ADMIN_CATEGORY_IDS } from "@/lib/constants";
+import { getCategoryLevels, normaliseLevel, supportsTabs } from "@/lib/constants";
 
 export default function CommentCategory({
   category,
@@ -35,7 +35,7 @@ export default function CommentCategory({
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkMsg, setBulkMsg] = useState("");
 
-  const supportsSkills = !ADMIN_CATEGORY_IDS.includes(category.id);
+  const supportsSkills = supportsTabs(category.id);
   const currentDisplaySkill = supportsSkills ? activeSkill : "General";
 
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function CommentCategory({
                 >
                   {skill}
                 </button>
-                {skill !== "General" && activeSkill === skill && (
+                {skill !== "General" && activeSkill === skill && onDeleteSkill && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onDeleteSkill(skill); }}
                     className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow"

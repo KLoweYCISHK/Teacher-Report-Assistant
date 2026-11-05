@@ -7,7 +7,7 @@ import {
   Copy, Check
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
-import { PROGRESS_PERIODS, bankCategory, ADMIN_CATEGORY_IDS } from "@/lib/constants";
+import { PROGRESS_PERIODS, bankCategory, ADMIN_CATEGORY_IDS, supportsTabs, getTabList } from "@/lib/constants";
 
 export default function StudentStep({
   subject,
@@ -40,15 +40,16 @@ export default function StudentStep({
 
   const activeCategory = categories[activeCatIndex] || categories[0];
   const isLastCategory = activeCatIndex === categories.length - 1;
-  // Sharing Attitude to Learning and Homework across subjects is admin-only
-  const isSubjectShareable = false;
-  // Attitude to Learning and Homework are shared to every report by the admin
-  const isPeriodShareable = !["Language", ...ADMIN_CATEGORY_IDS].includes(activeCategory?.id);
-  const isSkillCategory = !ADMIN_CATEGORY_IDS.includes(activeCategory?.id);
+  // Attitude to Learning and Homework can be shared with other subjects (own department or others)
+  const isSubjectShareable = ADMIN_CATEGORY_IDS.includes(activeCategory?.id);
+  // Sharing with a later progress report copies ATL, Homework, Performance based and Development together
+  const isPeriodShareable = activeCategory?.id !== "Language";
+  const isSkillCategory = supportsTabs(activeCategory?.id);
 
-  const currentSkillTabs = isSkillCategory
-    ? (subject?.skill_tabs?.[bankCategory(activeCategory?.id)] || []).filter(t => t !== "General")
-    : ["General"];
+  const currentSkillTabs = getTabList(
+    bankCategory(activeCategory?.id),
+    subject?.skill_tabs?.[bankCategory(activeCategory?.id)] || []
+  );
 
   const getSkill = (catId) => activeSkills[catId] || "";
 
@@ -154,12 +155,12 @@ export default function StudentStep({
                   className="text-purple-700 text-xs"
                   onClick={() => onOpenShareModal(activeCategory.id)}
                 >
-                  <Globe className="w-3 h-3 mr-1" /> Share w/ Subjects
+                  <Globe className="w-3 h-3 mr-1" /> Share ATL & Homework w/ Subjects
                 </Button>
               )}
-              {isPeriodShareable && PROGRESS_PERIODS.includes(reportPeriod) && (
+              {isPeriodShareable && PROGRESS_PERIODS.slice(0, -1).includes(reportPeriod) && (
                 <Button variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id)}>
-                  <Share2 className="w-3 h-3 mr-1" /> Share with Progress Report
+                  <Share2 className="w-3 h-3 mr-1" /> Share with Progress 3 / 4
                 </Button>
               )}
             </div>

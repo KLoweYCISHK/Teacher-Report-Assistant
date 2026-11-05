@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useReportData } from "@/lib/useReportData";
-import { getCommentPeriod, getCategoryLabel, bankCategory, ADMIN_PASSWORD } from "@/lib/constants";
+import { getCommentPeriod, getCategoryLabel, bankCategory, ADMIN_PASSWORD, ADMIN_CATEGORY_IDS, PERIOD_SHARE_CATEGORY_IDS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 import Header from "@/components/report/Header";
@@ -25,7 +25,7 @@ export default function Home() {
   const [activeCategories, setActiveCategories] = useState([]);
   const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
   const [shareModalData, setShareModalData] = useState(null);
-  const [periodShareCat, setPeriodShareCat] = useState(null);
+  const [showPeriodShare, setShowPeriodShare] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const handleOpenAdmin = () => {
@@ -128,21 +128,51 @@ export default function Home() {
 
   const handleShareToSubjects = async (selectedSubjectIds) => {
     if (!shareModalData || !selectedSubject) return;
-    await data.shareCommentsToSubjects(selectedSubject.id, shareModalData.catId, selectedSubjectIds);
-    alert(`Shared successfully to ${selectedSubjectIds.length} subjects!`);
+    const cats = ADMIN_CATEGORY_IDS.includes(shareModalData.catId) ? ADMIN_CATEGORY_IDS : [shareModalData.catId];
+    try {
+      await data.shareCommentsToSubjects(selectedSubject.id, cats, selectedSubjectIds);
+      alert(`Shared successfully to ${selectedSubjectIds.length} subject${selectedSubjectIds.length === 1 ? "" : "s"}!`);
+    } catch (e) {
+      console.error(e);
+      alert("Sharing failed. Please try again.");
+      return;
+    }
     setShareModalData(null);
   };
 
+  // Copies Attitude to Learning, Homework, Performance based and Development to later progress reports
   const handleSharePeriods = async (targetPeriods) => {
-    if (!selectedSubject || !periodShareCat) return;
+    if (!selectedSubject) return;
     const sourcePeriod = reportPeriod;
     const list = targetPeriods.join(" and ");
-    if (!confirm(`Replace all ${periodShareCat} comments in ${list} with data from ${sourcePeriod}?`)) return;
-    for (const target of targetPeriods) {
-      await data.sharePeriodComments(selectedSubject.id, periodShareCat, sourcePeriod, target);
+    if (!confirm(`Replace the Attitude to Learning, Homework, Performance based and Development comments in ${list} with ${sourcePeriod}'s?`)) return;
+    try {
+      for (const target of targetPeriods) {
+        for (const cat of PERIOD_SHARE_CATEGORY_IDS) {
+          await data.sharePeriodComments(selectedSubject.id, cat, sourcePeriod, target);
+        }
+      }
+      alert(`Successfully copied to ${list}!`);
+      setShowPeriodShare(false);
+    } catch (e) {
+      console.error(e);
+      alert("Sharing failed. Please try again.");
     }
-    alert(`Successfully copied to ${list}!`);
-    setPeriodShareCat(null);
+  };
+
+  // Pull the admin (PLT) Attitude to Learning and Homework banks into the chosen subjects
+  const handleApplyPlt = async (subjectIds) => {
+    try {
+      await data.applyPltComments(subjectIds);
+      alert(`PLT Generated comments added to ${subjectIds.length} subject${subjectIds.length === 1 ? "" : "s"}.`);
+      return true;
+    } catch (e) {
+      console.error(e);
+      alert(e.message === "NO_PLT_COMMENTS"
+        ? "No PLT Generated comments have been added on the admin page yet."
+        : "Could not add the PLT comments. Please try again.");
+      return false;
+    }
   };
 
   const generateFinalBatch = () => {
@@ -182,7 +212,7 @@ export default function Home() {
       )}
       <main className="max-w-[1760px] mx-auto px-4 sm:px-8 -mt-8 relative z-10">
         {isAdmin && (
-          <AdminPanel data={data} subjectCount={data.subjects.length} onExit={() => setIsAdmin(false)} />
+          <AdminPanel data={data} onExit={() => setIsAdmin(false)} />
         )}
 
         {isSetup && !isAdmin && (
@@ -214,6 +244,7 @@ export default function Home() {
               setSelectedSubject(null);
             }}
             onUpdateMockTitle={handleUpdateMockTitle}
+            onApplyPlt={handleApplyPlt}
           />
         )}
 
@@ -250,7 +281,7 @@ export default function Home() {
             onEditComment={async (id, newText) => await data.editComment(id, newText)}
             onDeleteComment={async (id) => await data.deleteComment(id)}
             onOpenShareModal={(catId) => setShareModalData({ catId: bankCategory(catId) })}
-            onSharePeriod={(catId) => setPeriodShareCat(bankCategory(catId))}
+            onSharePeriod={() => setShowPeriodShare(true)}
             onDeleteAllComments={handleDeleteAllComments}
             reportPeriod={reportPeriod}
             onAddSkill={handleAddSkill}
@@ -277,11 +308,10 @@ export default function Home() {
         />
       )}
 
-      {periodShareCat && (
+      {showPeriodShare && (
         <PeriodShareModal
-          categoryId={periodShareCat}
           sourcePeriod={reportPeriod}
-          onClose={() => setPeriodShareCat(null)}
+          onClose={() => setShowPeriodShare(false)}
           onConfirm={handleSharePeriods}
         />
       )}

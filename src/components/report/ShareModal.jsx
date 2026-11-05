@@ -44,7 +44,9 @@ export default function ShareModal({
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const displayCat = getCategoryLabel(categoryId);
+  const displayCat = ["HPL", "Homework"].includes(categoryId)
+    ? "Attitude to Learning & Homework"
+    : getCategoryLabel(categoryId);
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex justify-end">
