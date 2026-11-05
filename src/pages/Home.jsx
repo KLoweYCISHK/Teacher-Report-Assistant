@@ -139,15 +139,16 @@ export default function Home() {
     setShowShareModal(false);
   };
 
-  // Copies Attitude to Learning, Homework, Performance based and Development to later progress reports
-  const handleSharePeriods = async (targetPeriods) => {
-    if (!selectedSubject) return;
+  // Copies the chosen categories to later progress reports
+  const handleSharePeriods = async (targetPeriods, cats) => {
+    if (!selectedSubject || !cats?.length) return;
     const sourcePeriod = reportPeriod;
     const list = targetPeriods.join(" and ");
-    if (!confirm(`Replace the Attitude to Learning, Homework, Performance based and Development comments in ${list} with ${sourcePeriod}'s?`)) return;
+    const catNames = cats.map(c => c === "Assessment" ? "Performance based" : getCategoryLabel(c)).join(", ");
+    if (!confirm(`Replace the ${catNames} comments in ${list} with ${sourcePeriod}'s?`)) return;
     try {
       for (const target of targetPeriods) {
-        for (const cat of PERIOD_SHARE_CATEGORY_IDS) {
+        for (const cat of cats) {
           await data.sharePeriodComments(selectedSubject.id, cat, sourcePeriod, target);
         }
       }
