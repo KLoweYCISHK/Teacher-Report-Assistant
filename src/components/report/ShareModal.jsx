@@ -4,10 +4,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Share2, Briefcase } from "lucide-react";
-import { getCategoryLabel } from "@/lib/constants";
+import { PERIOD_SHARE_CATEGORY_IDS, getCategoryLabel } from "@/lib/constants";
+
+// 1. and 2. Performance based share one bank, so they appear as one option
+const SHARE_OPTIONS = PERIOD_SHARE_CATEGORY_IDS.map(id => ({
+  id,
+  label: id === "Assessment" ? "Performance based (1 & 2)" : getCategoryLabel(id),
+}));
 
 export default function ShareModal({
-  categoryId,
   currentSubjectId,
   subjects,
   departments,
@@ -15,6 +20,9 @@ export default function ShareModal({
   onConfirm,
 }) {
   const [selected, setSelected] = useState([]);
+  const [cats, setCats] = useState([]);
+  const toggleCat = (id) => setCats(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const allCats = cats.length === SHARE_OPTIONS.length;
   const [selectedDeptId, setSelectedDeptId] = useState("");
 
   const currentSubject = subjects.find(s => s.id === currentSubjectId);
@@ -44,16 +52,13 @@ export default function ShareModal({
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const displayCat = ["HPL", "Homework"].includes(categoryId)
-    ? "Attitude to Learning & Homework"
-    : getCategoryLabel(categoryId);
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex justify-end">
       <div className="bg-card w-full max-w-md h-full shadow-2xl flex flex-col animate-in">
         <div className="p-6 border-b flex justify-between items-center bg-muted">
           <h2 className="text-xl font-extrabold text-primary flex items-center gap-2">
-            <Share2 className="w-5 h-5" /> Share {displayCat}
+            <Share2 className="w-5 h-5" /> Share with Subjects
           </h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-6 h-6" />
@@ -62,8 +67,36 @@ export default function ShareModal({
 
         <div className="p-6 flex-1 overflow-y-auto">
           <p className="text-sm text-muted-foreground mb-6">
-            Select subjects to share your <strong>{displayCat}</strong> comments and custom tabs with.
+            Choose the categories to share, then the subjects to share them with. Comments for every report period and
+            any custom tabs are copied; comments a subject already has are skipped.
           </p>
+
+          <div className="mb-6">
+            <div className="flex justify-between items-end mb-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Select Categories</label>
+              <button
+                onClick={() => setCats(allCats ? [] : SHARE_OPTIONS.map(o => o.id))}
+                className="text-xs font-bold text-accent hover:underline"
+              >
+                {allCats ? "Deselect All" : "Select All"}
+              </button>
+            </div>
+            <div className="space-y-2">
+              {SHARE_OPTIONS.map(o => (
+                <label
+                  key={o.id}
+                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                    cats.includes(o.id) ? "bg-accent/10 border-accent" : "bg-card hover:bg-muted"
+                  }`}
+                >
+                  <Checkbox checked={cats.includes(o.id)} onCheckedChange={() => toggleCat(o.id)} />
+                  <span className={`font-medium text-sm ${cats.includes(o.id) ? "text-primary" : "text-muted-foreground"}`}>
+                    {o.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
 
           <div className="space-y-4">
             <div>
@@ -119,10 +152,10 @@ export default function ShareModal({
         </div>
 
         <div className="p-6 border-t bg-muted flex justify-between items-center">
-          <Badge variant="secondary" className="text-sm font-bold">{selected.length} Selected</Badge>
+          <Badge variant="secondary" className="text-sm font-bold">{cats.length} categories · {selected.length} subjects</Badge>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={() => onConfirm(selected)} disabled={selected.length === 0}>
+            <Button onClick={() => onConfirm(selected, cats)} disabled={selected.length === 0 || cats.length === 0}>
               <Share2 className="w-4 h-4 mr-2" /> Share
             </Button>
           </div>

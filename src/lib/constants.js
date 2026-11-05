@@ -45,17 +45,18 @@ export const ADMIN_CATEGORIES = STANDARD_CATEGORIES.filter(c => ADMIN_CATEGORY_I
 // Categories copied by "Share with Progress Report" (2. Performance based shares the Assessment bank)
 export const PERIOD_SHARE_CATEGORY_IDS = ["HPL", "Homework", "Assessment", "Improvement"];
 
-// Homework has no custom tabs
+// Every category can have custom tabs
 export function supportsTabs(categoryId) {
-  return categoryId !== "Homework";
+  return true;
 }
 
-// Attitude to Learning always keeps a "General" tab so comments saved before tabs existed still show
+// Only the tabs staff add themselves; there is no built-in "General" tab
 export function getTabList(categoryId, customTabs = []) {
-  if (!supportsTabs(categoryId)) return ["General"];
-  const custom = customTabs.filter(t => t !== "General");
-  return categoryId === "HPL" ? ["General", ...custom] : custom;
+  return customTabs.filter(t => t !== "General");
 }
+
+// The admin (PLT) bank is not tied to a progress report; subjects get it in every progress report
+export const ADMIN_PERIOD = "shared";
 
 // 1. and 2. Performance based share one comment bank and one set of tabs
 export function bankCategory(categoryId) {

@@ -24,7 +24,7 @@ export default function Home() {
   const [classData, setClassData] = useState({});
   const [activeCategories, setActiveCategories] = useState([]);
   const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
-  const [shareModalData, setShareModalData] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [showPeriodShare, setShowPeriodShare] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -97,7 +97,7 @@ export default function Home() {
 
   const handleAddSkill = async (categoryId, skillName) => {
     categoryId = bankCategory(categoryId);
-    if (!syncedSubject || categoryId === "Homework") return;
+    if (!syncedSubject) return;
     const existing = (syncedSubject.skill_tabs?.[categoryId] || []).filter(t => t !== "General");
     if (!existing.includes(skillName)) {
       await data.updateSubject(syncedSubject.id, {
@@ -108,7 +108,7 @@ export default function Home() {
 
   const handleDeleteSkill = async (categoryId, skillName) => {
     categoryId = bankCategory(categoryId);
-    if (!syncedSubject || categoryId === "Homework") return;
+    if (!syncedSubject) return;
     const existing = syncedSubject.skill_tabs?.[categoryId] || [];
     const filtered = existing.filter(s => s !== skillName);
     const final = filtered;
@@ -126,9 +126,8 @@ export default function Home() {
     await data.deleteAllCommentsInCategory(selectedSubject.id, categoryId, period);
   };
 
-  const handleShareToSubjects = async (selectedSubjectIds) => {
-    if (!shareModalData || !selectedSubject) return;
-    const cats = ADMIN_CATEGORY_IDS.includes(shareModalData.catId) ? ADMIN_CATEGORY_IDS : [shareModalData.catId];
+  const handleShareToSubjects = async (selectedSubjectIds, cats) => {
+    if (!selectedSubject || !cats?.length) return;
     try {
       await data.shareCommentsToSubjects(selectedSubject.id, cats, selectedSubjectIds);
       alert(`Shared successfully to ${selectedSubjectIds.length} subject${selectedSubjectIds.length === 1 ? "" : "s"}!`);
@@ -137,7 +136,7 @@ export default function Home() {
       alert("Sharing failed. Please try again.");
       return;
     }
-    setShareModalData(null);
+    setShowShareModal(false);
   };
 
   // Copies Attitude to Learning, Homework, Performance based and Development to later progress reports
@@ -280,7 +279,7 @@ export default function Home() {
             onBulkAddComments={handleBulkAddComments}
             onEditComment={async (id, newText) => await data.editComment(id, newText)}
             onDeleteComment={async (id) => await data.deleteComment(id)}
-            onOpenShareModal={(catId) => setShareModalData({ catId: bankCategory(catId) })}
+            onOpenShareModal={() => setShowShareModal(true)}
             onSharePeriod={() => setShowPeriodShare(true)}
             onDeleteAllComments={handleDeleteAllComments}
             reportPeriod={reportPeriod}
@@ -316,13 +315,12 @@ export default function Home() {
         />
       )}
 
-      {shareModalData && syncedSubject && (
+      {showShareModal && syncedSubject && (
         <ShareModal
-          categoryId={shareModalData.catId}
           currentSubjectId={syncedSubject.id}
           subjects={data.subjects}
           departments={data.departments}
-          onClose={() => setShareModalData(null)}
+          onClose={() => setShowShareModal(false)}
           onConfirm={handleShareToSubjects}
         />
       )}

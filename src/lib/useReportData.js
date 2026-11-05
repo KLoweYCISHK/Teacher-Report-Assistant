@@ -4,7 +4,7 @@ import {
   getDocs, query, where, writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { REPORT_PERIODS, ADMIN_SUBJECT_ID, ADMIN_CATEGORY_IDS } from "@/lib/constants";
+import { REPORT_PERIODS, PROGRESS_PERIODS, ADMIN_SUBJECT_ID, ADMIN_CATEGORY_IDS, ADMIN_PERIOD } from "@/lib/constants";
 
 const COL = {
   departments: "departments",
@@ -225,13 +225,19 @@ export function useReportData() {
   };
 
   // PLT Generated comments: replace each target subject's Attitude to Learning and Homework
-  // banks (every report period) with the admin bank, and mark the subject as using PLT comments.
+  // banks with the admin bank in every progress report, and mark the subject as using PLT comments.
   const applyPltComments = async (targetSubjectIds) => {
     const allComments = toList(await getDocs(collection(db, COL.comments)));
     const allSubjects = toList(await getDocs(collection(db, COL.subjects)));
-    const source = allComments.filter(c =>
-      c.subject_id === ADMIN_SUBJECT_ID && ADMIN_CATEGORY_IDS.includes(c.category)
-    );
+    const seen = new Set();
+    const source = allComments
+      .filter(c => c.subject_id === ADMIN_SUBJECT_ID && ADMIN_CATEGORY_IDS.includes(c.category))
+      .filter(c => {
+        const key = [c.category, c.level, c.skill_tab || "General", c.text].join("|");
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     if (source.length === 0) throw new Error("NO_PLT_COMMENTS");
 
     const toDelete = allComments.filter(c =>
@@ -241,15 +247,17 @@ export function useReportData() {
 
     const records = [];
     targetSubjectIds.forEach(subjectId => {
-      source.forEach(c => records.push({
-        subject_id: subjectId,
-        category: c.category,
-        level: c.level,
-        text: c.text,
-        period: c.period,
-        skill_tab: c.skill_tab || "General",
-        sort_order: c.sort_order ?? 0,
-      }));
+      PROGRESS_PERIODS.forEach(period => {
+        source.forEach(c => records.push({
+          subject_id: subjectId,
+          category: c.category,
+          level: c.level,
+          text: c.text,
+          period,
+          skill_tab: c.skill_tab || "General",
+          sort_order: c.sort_order ?? 0,
+        }));
+      });
     });
     await bulkCreate(COL.comments, records);
 
@@ -261,6 +269,33 @@ export function useReportData() {
         else delete skillTabs[cat];
       });
       await updateDoc(doc(db, COL.subjects, subjectId), { skill_tabs: skillTabs, atl_source: "plt" });
+    }
+  };
+
+  // Older admin comments were saved per progress report. Merge them into one bank,
+  // dropping duplicates, so the admin page no longer needs a progress report choice.
+  const consolidateAdminComments = async () => {
+    const admin = toList(await getDocs(collection(db, COL.comments)))
+      .filter(c => c.subject_id === ADMIN_SUBJECT_ID);
+    if (!admin.some(c => c.period !== ADMIN_PERIOD)) return;
+    const order = { [ADMIN_PERIOD]: 0, "Progress 2": 1, "Progress 3": 2, "Progress 4": 3 };
+    admin.sort((a, b) => (order[a.period] ?? 9) - (order[b.period] ?? 9));
+    const seen = new Set();
+    const toDelete = [];
+    const toMove = [];
+    admin.forEach(c => {
+      const key = [c.category, c.level, c.skill_tab || "General", c.text].join("|");
+      if (seen.has(key)) toDelete.push(c);
+      else {
+        seen.add(key);
+        if (c.period !== ADMIN_PERIOD) toMove.push(c);
+      }
+    });
+    await deleteRefs(toDelete.map(c => doc(db, COL.comments, c.id)));
+    for (let i = 0; i < toMove.length; i += CHUNK) {
+      const batch = writeBatch(db);
+      toMove.slice(i, i + CHUNK).forEach(c => batch.update(doc(db, COL.comments, c.id), { period: ADMIN_PERIOD }));
+      await batch.commit();
     }
   };
 
@@ -296,6 +331,7 @@ export function useReportData() {
     shareCommentsToSubjects,
     sharePeriodComments,
     applyPltComments,
+    consolidateAdminComments,
     adminTabs,
     setAdminTabs,
     setLogo,

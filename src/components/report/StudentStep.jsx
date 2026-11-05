@@ -40,8 +40,6 @@ export default function StudentStep({
 
   const activeCategory = categories[activeCatIndex] || categories[0];
   const isLastCategory = activeCatIndex === categories.length - 1;
-  // Attitude to Learning and Homework can be shared with other subjects (own department or others)
-  const isSubjectShareable = ADMIN_CATEGORY_IDS.includes(activeCategory?.id);
   // Sharing with a later progress report copies ATL, Homework, Performance based and Development together
   const isPeriodShareable = activeCategory?.id !== "Language";
   const isSkillCategory = supportsTabs(activeCategory?.id);
@@ -105,7 +103,12 @@ export default function StudentStep({
       {/* Category Progress Tabs */}
       <Card>
         <CardContent className="pt-5 pb-4">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Categories</p>
+          <div className="flex justify-between items-center flex-wrap gap-2 mb-3">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Categories</p>
+            <Button variant="outline" size="sm" className="text-purple-700 text-xs" onClick={onOpenShareModal}>
+              <Globe className="w-3 h-3 mr-1" /> Share with Subjects
+            </Button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {categories.map((cat, idx) => {
               const textVal = classData[student]?.[cat.id] || "";
@@ -148,16 +151,6 @@ export default function StudentStep({
               >
                 <Trash2 className="w-3 h-3 mr-1" /> Clear Bank
               </Button>
-              {isSubjectShareable && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-purple-700 text-xs"
-                  onClick={() => onOpenShareModal(activeCategory.id)}
-                >
-                  <Globe className="w-3 h-3 mr-1" /> Share ATL & Homework w/ Subjects
-                </Button>
-              )}
               {isPeriodShareable && PROGRESS_PERIODS.slice(0, -1).includes(reportPeriod) && (
                 <Button variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id)}>
                   <Share2 className="w-3 h-3 mr-1" /> Share with Progress 3 / 4

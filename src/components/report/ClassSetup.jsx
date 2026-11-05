@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   BookOpen, Calendar, Users, Plus, Trash2, ArrowRight,
-  Briefcase, Filter, FileText, Check, Upload, Sparkles, X
+  Briefcase, Filter, FileText, Check, Upload, Sparkles
 } from "lucide-react";
 import { REPORT_PERIODS, OPTIONAL_CATEGORIES, STANDARD_CATEGORIES, REQUIRED_CATEGORY_IDS } from "@/lib/constants";
 
@@ -23,8 +23,6 @@ export default function ClassSetup({
   onUpdateMockTitle,
   onApplyPlt,
 }) {
-  const [showPlt, setShowPlt] = useState(false);
-  const [pltTargets, setPltTargets] = useState([]);
   const [pltBusy, setPltBusy] = useState(false);
   const [namesInput, setNamesInput] = useState("");
   const [isCreatingSubject, setIsCreatingSubject] = useState(false);
@@ -123,23 +121,21 @@ export default function ClassSetup({
     }
   };
 
-  const openPlt = () => {
-    setPltTargets(selectedSubject ? [selectedSubject.id] : []);
-    setShowPlt(true);
-  };
-  const togglePlt = (id) => setPltTargets(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  const allPltSelected = filteredSubjects.length > 0 && filteredSubjects.every(s => pltTargets.includes(s.id));
+  // PLT Generated comments go to every subject in the chosen department
+  const pltCount = filteredSubjects.filter(s => s.atl_source === "plt").length;
+  const deptUsesPlt = filteredSubjects.length > 0 && pltCount === filteredSubjects.length;
 
   const handleApplyPlt = async () => {
-    if (pltTargets.length === 0) return;
+    if (!selectedDept) return;
+    if (filteredSubjects.length === 0) { alert(`There are no subjects in ${selectedDept.name} yet.`); return; }
+    const n = filteredSubjects.length;
     if (!confirm(
-      `Use the PLT Generated Attitude to Learning and Homework comments for ${pltTargets.length} subject${pltTargets.length === 1 ? "" : "s"}?\n\n` +
+      `Add the PLT Generated Attitude to Learning and Homework comments to all ${n} subject${n === 1 ? "" : "s"} in ${selectedDept.name}?\n\n` +
       "Any Attitude to Learning and Homework comments these subjects already have (all progress reports) will be replaced."
     )) return;
     setPltBusy(true);
-    const ok = await onApplyPlt(pltTargets);
+    await onApplyPlt(filteredSubjects.map(s => s.id));
     setPltBusy(false);
-    if (ok) setShowPlt(false);
   };
 
   const canStart = selectedSubject && namesInput.trim() && reportPeriod && (!showSharedConfig || hasSelectedOptional);
@@ -185,6 +181,19 @@ export default function ClassSetup({
               </Button>
             )}
           </div>
+          {selectedDept && (
+            <div className="flex items-center gap-3 flex-wrap pt-1">
+              <Button variant="outline" size="sm" className="text-purple-700 text-xs" onClick={handleApplyPlt} disabled={pltBusy}>
+                <Sparkles className="w-3 h-3 mr-1" />
+                {pltBusy ? "Adding..." : deptUsesPlt ? "Update PLT Generated Comments" : "PLT Generated Comments"}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {deptUsesPlt
+                  ? `All ${selectedDept.name} subjects use the PLT Attitude to Learning and Homework comments.`
+                  : `Add the PLT Attitude to Learning and Homework comments to every ${selectedDept.name} subject.`}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Step 2: Subject */}
@@ -253,72 +262,7 @@ export default function ClassSetup({
             </div>
           )}
 
-          {selectedSubject && !isCreatingSubject && (
-            <div className="flex items-center gap-3 flex-wrap pt-1">
-              <Button variant="outline" size="sm" className="text-purple-700 text-xs" onClick={openPlt}>
-                <Sparkles className="w-3 h-3 mr-1" />
-                {selectedSubject.atl_source === "plt" ? "Update PLT Generated Comments" : "PLT Generated Comments"}
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                {selectedSubject.atl_source === "plt"
-                  ? "This subject uses the PLT Attitude to Learning and Homework comments."
-                  : "Use the PLT Attitude to Learning and Homework comments instead of writing your own."}
-              </span>
-            </div>
-          )}
         </div>
-
-        {showPlt && (
-          <div className="fixed inset-0 bg-black/50 z-[100] flex justify-end">
-            <div className="bg-card w-full max-w-md h-full shadow-2xl flex flex-col">
-              <div className="p-6 border-b flex justify-between items-center bg-muted">
-                <h2 className="text-xl font-extrabold text-primary flex items-center gap-2">
-                  <Sparkles className="w-5 h-5" /> PLT Generated Comments
-                </h2>
-                <button onClick={() => setShowPlt(false)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="p-6 flex-1 overflow-y-auto space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Adds the PLT Attitude to Learning and Homework comments (every progress report, with their tabs) to the
-                  {" "}{selectedDept?.name} subjects you tick. Their existing comments in those two categories are replaced.
-                </p>
-                <div className="flex justify-between items-end">
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Select Subjects</span>
-                  <button
-                    onClick={() => setPltTargets(allPltSelected ? [] : filteredSubjects.map(s => s.id))}
-                    className="text-xs font-bold text-accent hover:underline"
-                  >
-                    {allPltSelected ? "Deselect All" : "Select All"}
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {filteredSubjects.map(s => (
-                    <label
-                      key={s.id}
-                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                        pltTargets.includes(s.id) ? "bg-accent/10 border-accent" : "bg-card hover:bg-muted"
-                      }`}
-                    >
-                      <Checkbox checked={pltTargets.includes(s.id)} onCheckedChange={() => togglePlt(s.id)} />
-                      <span className="font-medium text-sm flex-1">{s.name}</span>
-                      {s.atl_source === "plt" && (
-                        <span className="text-[10px] font-bold uppercase text-purple-700">PLT</span>
-                      )}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="p-6 border-t flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setShowPlt(false)} disabled={pltBusy}>Cancel</Button>
-                <Button className="flex-1" onClick={handleApplyPlt} disabled={pltBusy || pltTargets.length === 0}>
-                  {pltBusy ? "Adding..." : `Add to ${pltTargets.length} subject${pltTargets.length === 1 ? "" : "s"}`}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Step 3: Report Period */}
         <div className={`space-y-3 transition-opacity ${!selectedSubject ? "opacity-40 pointer-events-none" : ""}`}>

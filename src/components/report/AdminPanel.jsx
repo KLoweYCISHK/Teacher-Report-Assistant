@@ -1,18 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldCheck, LogOut, FileText } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
-import { PROGRESS_PERIODS, ADMIN_CATEGORIES, ADMIN_SUBJECT_ID, getTabList } from "@/lib/constants";
+import { ADMIN_CATEGORIES, ADMIN_SUBJECT_ID, ADMIN_PERIOD, getTabList } from "@/lib/constants";
 
 export default function AdminPanel({ data, onExit }) {
-  const [period, setPeriod] = useState(PROGRESS_PERIODS[0]);
+  const period = ADMIN_PERIOD;
+
+  useEffect(() => {
+    data.consolidateAdminComments().catch(e => console.error(e));
+  }, []);
   const [catIndex, setCatIndex] = useState(0);
   const [activeTabs, setActiveTabs] = useState({});
 
   const category = ADMIN_CATEGORIES[catIndex];
   const tabs = getTabList(category.id, data.adminTabs?.[category.id] || []);
-  const activeTab = activeTabs[category.id] || "General";
+  const activeTab = tabs.includes(activeTabs[category.id]) ? activeTabs[category.id] : (tabs[0] || "");
 
   const comments = data.comments.filter(c =>
     c.subject_id === ADMIN_SUBJECT_ID && c.category === category.id && c.period === period
@@ -44,23 +48,6 @@ export default function AdminPanel({ data, onExit }) {
           </div>
 
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Progress Report</p>
-            <div className="flex flex-wrap gap-2">
-              {PROGRESS_PERIODS.map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
-                    period === p ? "bg-accent text-accent-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-secondary"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Categories</p>
             <div className="flex flex-wrap gap-2">
               {ADMIN_CATEGORIES.map((c, i) => (
@@ -85,10 +72,10 @@ export default function AdminPanel({ data, onExit }) {
         <CardHeader className="bg-muted/50 border-b">
           <div className="flex justify-between items-center flex-wrap gap-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="w-5 h-5 text-accent" /> PLT {category.label} · {period}
+              <FileText className="w-5 h-5 text-accent" /> PLT {category.label}
             </CardTitle>
             <p className="text-xs text-muted-foreground max-w-md">
-              Subjects pull these in with the "PLT Generated Comments" button on their subject page.
+              Departments that choose "PLT Generated Comments" get these in every progress report.
             </p>
           </div>
         </CardHeader>
