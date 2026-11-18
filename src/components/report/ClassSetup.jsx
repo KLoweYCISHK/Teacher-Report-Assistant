@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   BookOpen, Calendar, Users, Plus, Trash2, ArrowRight,
-  Briefcase, Filter, FileText, Check, Upload, Sparkles
+  Briefcase, Filter, FileText, Check, Upload, Sparkles, FileSpreadsheet
 } from "lucide-react";
 import { REPORT_PERIODS, OPTIONAL_CATEGORIES, STANDARD_CATEGORIES, REQUIRED_CATEGORY_IDS } from "@/lib/constants";
 
@@ -22,6 +22,7 @@ export default function ClassSetup({
   onAddDepartment, onDeleteDepartment,
   onUpdateMockTitle,
   onApplyPlt,
+  onOpenImport,
 }) {
   const [pltBusy, setPltBusy] = useState(false);
   const [namesInput, setNamesInput] = useState("");
@@ -249,6 +250,11 @@ export default function ClassSetup({
                   <SelectItem value="__NEW__" className="font-bold text-accent">+ Add New Subject...</SelectItem>
                 </SelectContent>
               </Select>
+              {selectedSubject && onOpenImport && (
+                <Button variant="outline" className="text-green-700 hover:text-green-800" onClick={onOpenImport} title="Import Performance based and Development comments from Excel">
+                  <FileSpreadsheet className="w-4 h-4 mr-1" /> Import from Excel
+                </Button>
+              )}
               {selectedSubject && (
                 <Button variant="outline" size="icon" className="text-destructive hover:text-destructive" onClick={() => {
                   if (confirm(`Permanently delete "${selectedSubject.name}"?`)) {

@@ -138,6 +138,38 @@ export function useReportData() {
     return bulkCreate(COL.comments, records);
   };
 
+  // Excel import: add comments for each category/tab/level and add any new tabs to the subject.
+  // Comments the subject already has in that tab and level are skipped.
+  const importCommentBank = async (subjectId, period, sheets) => {
+    const records = [];
+    let skipped = 0;
+    const subj = subjects.find(s => s.id === subjectId);
+    const skillTabs = { ...(subj?.skill_tabs || {}) };
+
+    sheets.forEach(({ categoryId, tabs, comments: incoming }) => {
+      const existing = new Set(
+        comments
+          .filter(c => c.subject_id === subjectId && c.category === categoryId && c.period === period)
+          .map(c => [c.skill_tab || "General", c.level, c.text.trim()].join("|"))
+      );
+      incoming.forEach(c => {
+        const key = [c.skill_tab, c.level, c.text].join("|");
+        if (existing.has(key)) { skipped++; return; }
+        existing.add(key);
+        records.push({
+          subject_id: subjectId, category: categoryId, level: c.level, text: c.text,
+          period, skill_tab: c.skill_tab, sort_order: comments.length + records.length,
+        });
+      });
+      skillTabs[categoryId] = Array.from(new Set([...(skillTabs[categoryId] || []), ...tabs]))
+        .filter(t => t !== "General");
+    });
+
+    if (records.length > 0) await bulkCreate(COL.comments, records);
+    await updateDoc(doc(db, COL.subjects, subjectId), { skill_tabs: skillTabs });
+    return { added: records.length, skipped };
+  };
+
   const editComment = async (commentId, newText) => {
     await updateDoc(doc(db, COL.comments, commentId), { text: newText });
   };
@@ -324,6 +356,7 @@ export function useReportData() {
     updateSubject,
     addComment,
     bulkAddComments,
+    importCommentBank,
     editComment,
     deleteComment,
     getCommentsForSubject,

@@ -11,6 +11,7 @@ import ResultPanel from "@/components/report/ResultPanel.jsx";
 
 import ShareModal from "@/components/report/ShareModal";
 import PeriodShareModal from "@/components/report/PeriodShareModal";
+import ImportExcelModal from "@/components/report/ImportExcelModal";
 import AdminPanel from "@/components/report/AdminPanel.jsx";
 
 export default function Home() {
@@ -26,6 +27,7 @@ export default function Home() {
   const [finalBatchPrompt, setFinalBatchPrompt] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
   const [showPeriodShare, setShowPeriodShare] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const handleOpenAdmin = () => {
@@ -160,6 +162,21 @@ export default function Home() {
     }
   };
 
+  // Excel import into the current subject and report period
+  const handleImportExcel = async (plan) => {
+    if (!selectedSubject || plan.length === 0) return false;
+    try {
+      const sheets = plan.map(p => ({ ...p, categoryId: bankCategory(p.categoryId) }));
+      const { added, skipped } = await data.importCommentBank(selectedSubject.id, reportPeriod, sheets);
+      alert(`Imported ${added} comment${added === 1 ? "" : "s"}` + (skipped ? ` (${skipped} already in the bank were skipped).` : "."));
+      return true;
+    } catch (e) {
+      console.error(e);
+      alert("Import failed. Please try again.");
+      return false;
+    }
+  };
+
   // Pull the admin (PLT) Attitude to Learning and Homework banks into the chosen subjects
   const handleApplyPlt = async (subjectIds) => {
     try {
@@ -245,6 +262,7 @@ export default function Home() {
             }}
             onUpdateMockTitle={handleUpdateMockTitle}
             onApplyPlt={handleApplyPlt}
+            onOpenImport={() => setShowImport(true)}
           />
         )}
 
@@ -281,6 +299,7 @@ export default function Home() {
             onEditComment={async (id, newText) => await data.editComment(id, newText)}
             onDeleteComment={async (id) => await data.deleteComment(id)}
             onOpenShareModal={() => setShowShareModal(true)}
+            onOpenImport={() => setShowImport(true)}
             onSharePeriod={() => setShowPeriodShare(true)}
             onDeleteAllComments={handleDeleteAllComments}
             reportPeriod={reportPeriod}
@@ -313,6 +332,15 @@ export default function Home() {
           sourcePeriod={reportPeriod}
           onClose={() => setShowPeriodShare(false)}
           onConfirm={handleSharePeriods}
+        />
+      )}
+
+      {showImport && syncedSubject && (
+        <ImportExcelModal
+          subjectName={syncedSubject.name}
+          reportPeriod={reportPeriod}
+          onClose={() => setShowImport(false)}
+          onConfirm={handleImportExcel}
         />
       )}
 
