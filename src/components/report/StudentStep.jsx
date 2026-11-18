@@ -4,10 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CheckCircle, FileText, Trash2, Globe, Share2,
-  Copy, Check, FileSpreadsheet, Upload
+  Copy, Check, FileSpreadsheet
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
-import ImportFormatGuide from "./ImportFormatGuide.jsx";
 import { PROGRESS_PERIODS, bankCategory, ADMIN_CATEGORY_IDS, supportsTabs, getTabList } from "@/lib/constants";
 
 export default function StudentStep({
@@ -35,7 +34,6 @@ export default function StudentStep({
   const [activeCatIndex, setActiveCatIndex] = useState(0);
   const [activeSkills, setActiveSkills] = useState({});
   const [copied, setCopied] = useState(false);
-  const [showGuide, setShowGuide] = useState(true);
 
   useEffect(() => {
     setActiveCatIndex(0);
@@ -108,30 +106,6 @@ export default function StudentStep({
         </div>
       </div>
 
-      {/* Excel import — clearly visible for staff */}
-      {onOpenImport && (
-        <Card className="border-2 border-green-300 bg-green-50/60">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex flex-col lg:flex-row lg:items-start gap-5">
-              <div className="flex-1 space-y-3">
-                <h3 className="text-lg font-extrabold text-green-800 flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5" /> Import Performance based &amp; Development comments from Excel
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Comments are added to <strong>{subject?.name}</strong> for <strong>{reportPeriod}</strong>. Your file must be in this format:
-                </p>
-                {showGuide && <ImportFormatGuide />}
-                <button onClick={() => setShowGuide(v => !v)} className="text-xs font-bold text-green-700 hover:underline">
-                  {showGuide ? "Hide format guide" : "Show format guide"}
-                </button>
-              </div>
-              <Button onClick={onOpenImport} className="bg-green-600 hover:bg-green-700 text-white font-bold text-base h-12 px-6 shrink-0">
-                <Upload className="w-5 h-5 mr-2" /> Upload Excel file
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Category Progress Tabs */}
       <Card>
@@ -139,6 +113,11 @@ export default function StudentStep({
           <div className="flex justify-between items-center flex-wrap gap-2 mb-3">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Categories</p>
             <div className="flex gap-2 flex-wrap">
+              {onOpenImport && (
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold" onClick={onOpenImport}>
+                  <FileSpreadsheet className="w-3.5 h-3.5 mr-1" /> Upload Performance &amp; Development comments
+                </Button>
+              )}
               <Button variant="outline" size="sm" className="text-purple-700 text-xs" onClick={onOpenShareModal}>
                 <Globe className="w-3 h-3 mr-1" /> Share with Subjects
               </Button>
