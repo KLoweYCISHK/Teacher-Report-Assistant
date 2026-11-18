@@ -262,6 +262,7 @@ export default function Home() {
             }}
             onUpdateMockTitle={handleUpdateMockTitle}
             onApplyPlt={handleApplyPlt}
+            onOpenImport={() => setShowImport(true)}
           />
         )}
 
