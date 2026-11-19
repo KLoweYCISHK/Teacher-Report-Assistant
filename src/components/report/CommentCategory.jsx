@@ -117,7 +117,7 @@ export default function CommentCategory({
                     setIsAdding(false);
                     setIsManaging(false);
                   }}
-                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                  className={`px-3 py-1 rounded-full text-sm font-bold transition-all ${
                     usedElsewhere?.skill === skill
                       ? activeSkill === skill
                         ? "bg-red-600 text-white shadow-md ring-2 ring-red-300"
@@ -157,7 +157,7 @@ export default function CommentCategory({
             <button
               key={lvl}
               onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
                 activeLevel === lvl
                   ? "bg-accent text-accent-foreground border-accent shadow-sm"
                   : "bg-card text-muted-foreground border-border hover:bg-muted"
@@ -279,7 +279,7 @@ export default function CommentCategory({
               ))}
             </div>
           ) : (
-            <div className="space-y-2 max-h-[34rem] overflow-y-auto">
+            <div className="space-y-2 max-h-[65vh] overflow-y-auto">
               {activeComments.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">No comments available. Add some above.</p>
               )}
@@ -290,12 +290,12 @@ export default function CommentCategory({
                   <button
                     key={c.id}
                     onClick={() => handleSelectComment(c.text)}
-                    className={`w-full text-left text-base px-5 py-4 rounded-lg border transition-all flex items-start gap-3 ${
+                    className={`w-full text-left text-base leading-snug px-4 py-2.5 rounded-lg border transition-all flex items-start gap-3 ${
                       isSelected
                         ? "bg-accent/10 border-accent text-foreground font-medium"
                         : isUsedElsewhere
                           ? "bg-red-50 border-red-400 text-red-800 hover:bg-red-100"
-                          : "bg-card border-border hover:bg-muted/60 text-muted-foreground hover:text-foreground"
+                          : "bg-card border-border hover:bg-muted/60 hover:border-accent/40 text-foreground"
                     }`}
                   >
                     <span className={`mt-0.5 w-4 h-4 flex-shrink-0 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-accent bg-accent" : "border-muted-foreground/40"}`}>
