@@ -227,7 +227,7 @@ export default function Home() {
       {data.loading && (
         <p className="text-center text-sm text-muted-foreground mt-4 relative z-20">Loading comment banks…</p>
       )}
-      <main className="max-w-[1760px] mx-auto px-4 sm:px-8 -mt-8 relative z-10">
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-8 -mt-8 relative z-10">
         {isAdmin && (
           <AdminPanel data={data} onExit={() => setIsAdmin(false)} />
         )}
