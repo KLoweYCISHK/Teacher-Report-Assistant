@@ -19,7 +19,16 @@ export default function ResultPanel({ prompt, onStartOver }) {
 
   const handleCopy = (name, comments) => {
     const text = comments.map(c => `• ${c}`).join("\n");
-    navigator.clipboard.writeText(text).then(() => {
+    // Copy as a real bulleted list (HTML) so it pastes as proper bullets into the school system
+    const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const html = `<ul>${comments.map(c => `<li>${esc(c)}</li>`).join("")}</ul>`;
+    const write = window.ClipboardItem
+      ? navigator.clipboard.write([new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" }),
+        })])
+      : navigator.clipboard.writeText(text);
+    write.then(() => {
       setCopiedName(name);
       setTimeout(() => setCopiedName(null), 2000);
     });
