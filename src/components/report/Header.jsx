@@ -50,13 +50,13 @@ export default function Header({ logoUrl, onSetLogo, onOpenAdmin }) {
   };
 
   return (
-    <div className="bg-primary text-primary-foreground pt-8 pb-16 px-6">
-      <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
+    <div className="bg-primary text-primary-foreground pt-4 pb-12 px-6">
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="relative group">
             {logoUrl ? (
               <>
-                <img src={logoUrl} alt="School Logo" className="h-14 w-14 object-cover bg-white rounded-xl" />
+                <img src={logoUrl} alt="School Logo" className="h-10 w-10 object-cover bg-white rounded-xl" />
                 <button
                   onClick={handleRemoveLogo}
                   className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -70,7 +70,7 @@ export default function Header({ logoUrl, onSetLogo, onOpenAdmin }) {
                 <img
                   src={`${import.meta.env.BASE_URL}ycis-logo.svg`}
                   alt="YCIS logo"
-                  className="h-14 w-14 object-contain bg-white rounded-xl p-1"
+                  className="h-10 w-10 object-contain bg-white rounded-xl p-1"
                 />
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-black/90 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   {isUploading ? "Uploading..." : "Click to change logo"}
@@ -86,7 +86,7 @@ export default function Header({ logoUrl, onSetLogo, onOpenAdmin }) {
             )}
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Teacher Report Assistant</h1>
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">Teacher Report Assistant</h1>
           </div>
         </div>
         {onOpenAdmin && (
