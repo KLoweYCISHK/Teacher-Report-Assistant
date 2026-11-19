@@ -83,7 +83,16 @@ export default function StudentStep({
   const handleCopy = () => {
     if (activeCommentTexts.length === 0) return;
     const bulletText = activeCommentTexts.map(t => `• ${t}`).join("\n");
-    navigator.clipboard.writeText(bulletText).then(() => {
+    // Copy as a real bulleted list (HTML) so it pastes as proper bullets into the school system
+    const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const html = `<ul>${activeCommentTexts.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`;
+    const write = window.ClipboardItem
+      ? navigator.clipboard.write([new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([bulletText], { type: "text/plain" }),
+        })])
+      : navigator.clipboard.writeText(bulletText);
+    write.then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
