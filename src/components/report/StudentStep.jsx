@@ -101,13 +101,13 @@ export default function StudentStep({
   if (!activeCategory) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Sticky student name bar */}
       <div className="sticky top-0 z-40 bg-primary text-primary-foreground px-5 py-2.5 rounded-b-xl shadow-lg border-l-4 border-l-accent flex flex-wrap items-center gap-3">
         <Badge variant="secondary" className="text-xs font-bold uppercase tracking-wide">
           Student {studentIndex + 1} of {totalStudents}
         </Badge>
-        <h2 className="text-xl font-extrabold">{student}</h2>
+        <h2 className="text-lg font-extrabold">{student}</h2>
         <div className="ml-auto flex items-center gap-2 text-sm">
           <span className="opacity-70 uppercase text-xs font-bold tracking-wide">Subject</span>
           <span className="bg-white/15 rounded-md px-3 py-1 font-extrabold text-base">{subject?.name}</span>
@@ -118,7 +118,7 @@ export default function StudentStep({
 
       {/* Category Progress Tabs */}
       <Card>
-        <CardContent className="pt-5 pb-4">
+        <CardContent className="pt-4 pb-3">
           <div className="flex justify-between items-center flex-wrap gap-2 mb-3">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Categories</p>
             <div className="flex gap-2 flex-wrap">
@@ -141,7 +141,7 @@ export default function StudentStep({
                 <button
                   key={cat.id}
                   onClick={() => setActiveCatIndex(idx)}
-                  className={`px-5 py-2.5 rounded-lg font-bold text-base flex items-center gap-2 transition-all ${
+                  className={`px-3.5 py-1.5 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${
                     isActive
                       ? "bg-accent text-accent-foreground shadow-md ring-2 ring-accent ring-offset-2"
                       : hasData
@@ -160,9 +160,9 @@ export default function StudentStep({
 
       {/* Comment Editor */}
       <Card>
-        <CardHeader className="bg-muted/50 border-b">
+        <CardHeader className="bg-muted/50 border-b py-3">
           <div className="flex justify-between items-center flex-wrap gap-3">
-            <CardTitle className="text-xl flex items-center gap-2">
+            <CardTitle className="text-lg flex items-center gap-2">
               <FileText className="w-5 h-5 text-accent" /> {activeCategory.label}
             </CardTitle>
             <div className="flex gap-2 flex-wrap">
