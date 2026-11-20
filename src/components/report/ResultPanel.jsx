@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, CheckCircle, Copy, Check } from "lucide-react";
+import { Download, CheckCircle, Copy, Check, RotateCcw } from "lucide-react";
 
 export default function ResultPanel({ prompt, onStartOver }) {
   const [copiedName, setCopiedName] = useState(null);
@@ -57,7 +57,10 @@ export default function ResultPanel({ prompt, onStartOver }) {
         <p className="text-green-700 mt-2">All student reports have been compiled. Copy each report below.</p>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center gap-3">
+        <Button variant="outline" onClick={onStartOver} className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive">
+          <RotateCcw className="w-4 h-4 mr-2" /> Start Over
+        </Button>
         <Button onClick={handleDownload} className="bg-accent hover:bg-accent/90">
           <Download className="w-4 h-4 mr-2" /> Download Word Doc
         </Button>
@@ -90,15 +93,6 @@ export default function ResultPanel({ prompt, onStartOver }) {
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      <div className="text-center">
-        <button
-          onClick={onStartOver}
-          className="text-muted-foreground hover:text-foreground underline text-sm"
-        >
-          Start Over
-        </button>
       </div>
     </div>
   );
