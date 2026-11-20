@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CheckCircle, FileText, Trash2, Globe, Share2,
-  Copy, Check, FileSpreadsheet
+  Copy, Check, FileSpreadsheet, Eye, EyeOff
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
 import { PROGRESS_PERIODS, bankCategory, ADMIN_CATEGORY_IDS, supportsTabs, getTabList } from "@/lib/constants";
@@ -34,6 +34,16 @@ export default function StudentStep({
   const [activeCatIndex, setActiveCatIndex] = useState(0);
   const [activeSkills, setActiveSkills] = useState({});
   const [copied, setCopied] = useState(false);
+  // Show/hide the Final Report box (remembered between students)
+  const [showPreview, setShowPreview] = useState(() => {
+    try { return localStorage.getItem("tra_showPreview") !== "0"; } catch { return true; }
+  });
+  const togglePreview = () => {
+    setShowPreview(prev => {
+      try { localStorage.setItem("tra_showPreview", prev ? "0" : "1"); } catch {}
+      return !prev;
+    });
+  };
 
   useEffect(() => {
     setActiveCatIndex(0);
@@ -112,11 +122,21 @@ export default function StudentStep({
           <span className="opacity-70 uppercase text-xs font-bold tracking-wide">Subject</span>
           <span className="bg-white/15 rounded-md px-3 py-1 font-extrabold text-base">{subject?.name}</span>
           <span className="bg-accent text-accent-foreground rounded-md px-2 py-1 text-xs font-bold">{reportPeriod}</span>
+          <button
+            onClick={togglePreview}
+            className="ml-2 flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border border-primary-foreground/30 hover:bg-primary-foreground/10 transition-colors"
+          >
+            {showPreview
+              ? <><EyeOff className="w-3.5 h-3.5" /> Hide final report</>
+              : <><Eye className="w-3.5 h-3.5" /> Show final report</>}
+          </button>
         </div>
       </div>
 
       {/* Two columns: comment picking on the left, report preview on the right */}
-      <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-5 lg:items-start">
+      <div className={showPreview
+        ? "space-y-4 lg:space-y-0 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-5 lg:items-start"
+        : "max-w-5xl mx-auto"}>
       <div className="space-y-4 min-w-0">
 
       {/* Category Progress Tabs */}
@@ -210,6 +230,7 @@ export default function StudentStep({
       </div>
 
       {/* Preview Panel — bullet point format, kept in view on the right */}
+      {showPreview && (
       <aside className="bg-accent/5 border border-accent/20 rounded-xl p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
         <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
           <h3 className="text-xs font-bold text-primary uppercase tracking-wider">
@@ -241,6 +262,7 @@ export default function StudentStep({
           )}
         </div>
       </aside>
+      )}
       </div>
     </div>
   );
