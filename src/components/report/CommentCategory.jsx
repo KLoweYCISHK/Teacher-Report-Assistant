@@ -20,6 +20,8 @@ export default function CommentCategory({
   activeSkill,
   onSwitchSkill,
   onNextCategory,
+  onPrevCategory,
+  prevLabel = "Previous Category",
   isLastCategory,
   usedElsewhere,
 }) {
@@ -329,9 +331,15 @@ export default function CommentCategory({
         </div>
       )}
 
-      {/* Next Category button */}
-      {onNextCategory && (
-        <div className="sticky bottom-24 z-30 flex justify-end pt-2">
+      {/* Previous / Next Category buttons */}
+      {(onNextCategory || onPrevCategory) && (
+        <div className="sticky bottom-24 z-30 flex justify-between items-center gap-3 pt-2">
+          {onPrevCategory ? (
+            <Button variant="outline" onClick={onPrevCategory} className="font-bold bg-card shadow-sm">
+              ← {prevLabel}
+            </Button>
+          ) : <span />}
+          {onNextCategory && (
           <Button
             onClick={onNextCategory}
             disabled={!currentValue}
@@ -339,6 +347,7 @@ export default function CommentCategory({
           >
             Next Category →
           </Button>
+          )}
         </div>
       )}
     </div>
