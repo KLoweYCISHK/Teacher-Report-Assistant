@@ -223,11 +223,12 @@ export default function Home() {
         logoUrl={data.logoUrl}
         onSetLogo={data.setLogo}
         onOpenAdmin={isSetup && !isAdmin ? handleOpenAdmin : null}
+        wide={!!activeStudent}
       />
       {data.loading && (
         <p className="text-center text-sm text-muted-foreground mt-4 relative z-20">Loading comment banks…</p>
       )}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
+      <main className={`${activeStudent ? "max-w-[1500px]" : "max-w-5xl"} mx-auto px-4 sm:px-6 -mt-8 relative z-10`}>
         {isAdmin && (
           <AdminPanel data={data} onExit={() => setIsAdmin(false)} />
         )}
@@ -323,6 +324,7 @@ export default function Home() {
             window.scrollTo(0, 0);
           }}
           isLastStep={currentStepIndex === students.length - 1}
+          wide={!!activeStudent}
           disableNext={!isCurrentStudentComplete}
         />
       )}
