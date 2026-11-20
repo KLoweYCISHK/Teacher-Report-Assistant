@@ -12,6 +12,7 @@ import {
   Briefcase, Filter, FileText, Check, Upload, Sparkles, FileSpreadsheet
 } from "lucide-react";
 import { REPORT_PERIODS, OPTIONAL_CATEGORIES, STANDARD_CATEGORIES, REQUIRED_CATEGORY_IDS } from "@/lib/constants";
+import { readClassList } from "@/lib/importClassList";
 
 
 export default function ClassSetup({
@@ -41,41 +42,29 @@ export default function ClassSetup({
   const showSharedConfig = isSharedStyle && reportPeriod !== "Mocks";
   const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
 
+  // Optional ManageBac (Term Grades) import: fills the names and keeps each
+  // student's final grade and ATL scores in the browser for the report steps
+  const [classInfo, setClassInfo] = useState({});
+  const importedCount = Object.keys(classInfo).length;
+
   const handleFileImport = async (event) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
-
     setIsImporting(true);
     try {
-      // Read the TermGrades export in the browser: C = Last Name, D = First Name,
-      // F = Preferred Name, H = Final Grade.
-      const XLSX = await import("xlsx");
-      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-      const cell = (row, i) => String(row[i] ?? "").trim();
-
-      const students = rows
-        .filter(r => cell(r, 2) && cell(r, 2).toLowerCase() !== "last name")
-        .map(r => {
-          const name = [cell(r, 2), cell(r, 3)].filter(Boolean).join(" ") || cell(r, 5);
-          const grade = cell(r, 7);
-          return grade ? `${name}, ${grade}` : name;
-        })
-        .filter(Boolean);
-
-      if (students.length > 0) {
-        setNamesInput(prev => (prev.trim() ? prev + "\n" + students.join("\n") : students.join("\n")));
-        alert(`Successfully imported ${students.length} students!`);
-      } else {
-        alert("Could not find student names in the file. Names should be in columns C and D.");
+      const list = await readClassList(file);
+      if (list.length === 0) {
+        alert("No students found. Use the Term Grades export from ManageBac (names in columns C–F).");
+        return;
       }
+      setNamesInput(list.map(s => s.name).join("\n"));
+      setClassInfo(Object.fromEntries(list.map(s => [s.name, { grade: s.grade, atl: s.atl }])));
     } catch (error) {
       console.error("Import failed:", error);
-      alert("Import failed: " + error.message);
+      alert("Could not read that file. Please choose the ManageBac Excel (.xlsx) export.");
     } finally {
       setIsImporting(false);
-      event.target.value = "";
     }
   };
 
@@ -99,7 +88,8 @@ export default function ClassSetup({
       finalCategories = [...STANDARD_CATEGORIES];
     }
 
-    onStartClass(students, finalCategories);
+    const info = Object.fromEntries(students.filter(n => classInfo[n]).map(n => [n, classInfo[n]]));
+    onStartClass(students, finalCategories, info);
   };
 
   const handleSaveSubject = () => {
@@ -354,7 +344,23 @@ export default function ClassSetup({
           <Label className="flex items-center gap-2 text-sm font-bold">
             <Users className="w-4 h-4 text-accent" /> 4. Enter Student Names
           </Label>
-          <p className="text-xs text-muted-foreground">One name per line. These are stored only in your browser session.</p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">One name per line. These are stored only in your browser session.</p>
+            <label className={`text-xs font-bold text-green-700 hover:underline flex items-center gap-1 ${isImporting ? "opacity-50" : "cursor-pointer"}`}>
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              {isImporting ? "Reading…" : "Import class from ManageBac"}
+              <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileImport} disabled={isImporting} />
+            </label>
+          </div>
+          {importedCount > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs bg-green-50 border border-green-200 text-green-800 rounded-md px-3 py-1.5">
+              <span className="flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                {importedCount} students imported. Their final grade and ATL scores will show beside each name.
+              </span>
+              <button className="font-bold hover:underline" onClick={() => { setClassInfo({}); setNamesInput(""); }}>Clear</button>
+            </div>
+          )}
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">Student Name, Final Grade (optional)</p>
             <Textarea
