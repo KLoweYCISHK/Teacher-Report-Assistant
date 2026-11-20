@@ -7,11 +7,13 @@ import {
   Copy, Check, FileSpreadsheet, Eye, EyeOff
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
+import { ATL_FIELDS } from "@/lib/importClassList";
 import { PROGRESS_PERIODS, bankCategory, ADMIN_CATEGORY_IDS, supportsTabs, getTabList } from "@/lib/constants";
 
 export default function StudentStep({
   subject,
   student,
+  studentInfo,
   studentIndex,
   totalStudents,
   categories,
@@ -118,6 +120,18 @@ export default function StudentStep({
           Student {studentIndex + 1} of {totalStudents}
         </Badge>
         <h2 className="text-lg font-extrabold">{student}</h2>
+        {studentInfo && (studentInfo.grade || ATL_FIELDS.some(f => studentInfo.atl?.[f.key])) && (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs" title="From ManageBac">
+            {studentInfo.grade && (
+              <span className="bg-white text-primary rounded-md px-2 py-0.5 font-extrabold">Grade {studentInfo.grade}</span>
+            )}
+            {ATL_FIELDS.filter(f => studentInfo.atl?.[f.key]).map(f => (
+              <span key={f.key} title={`ATL: ${f.label}`} className="bg-white/15 rounded-md px-2 py-0.5 font-semibold">
+                {f.short} <span className="font-extrabold">{studentInfo.atl[f.key]}</span>
+              </span>
+            ))}
+          </div>
+        )}
         <div className="ml-auto flex items-center gap-2 text-sm">
           <span className="opacity-70 uppercase text-xs font-bold tracking-wide">Subject</span>
           <span className="bg-white/15 rounded-md px-3 py-1 font-extrabold text-base">{subject?.name}</span>
