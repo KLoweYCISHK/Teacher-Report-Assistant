@@ -13,6 +13,8 @@ import ShareModal from "@/components/report/ShareModal";
 import PeriodShareModal from "@/components/report/PeriodShareModal";
 import ImportExcelModal from "@/components/report/ImportExcelModal";
 import AdminPanel from "@/components/report/AdminPanel.jsx";
+import SavedClasses from "@/components/report/SavedClasses.jsx";
+import { saveClass, newClassId } from "@/lib/savedClasses";
 
 export default function Home() {
   const data = useReportData();
@@ -30,6 +32,9 @@ export default function Home() {
   const [showPeriodShare, setShowPeriodShare] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Saved progress for this class (browser only)
+  const [classId, setClassId] = useState(null);
+  const [className, setClassName] = useState("");
 
   const handleOpenAdmin = () => {
     const pw = prompt("Enter the admin password:");
@@ -64,7 +69,9 @@ export default function Home() {
     );
   }, [selectedSubject, data.comments, getEffectivePeriod]);
 
-  const handleStartClass = (names, categories, info = {}) => {
+  const handleStartClass = (names, categories, info = {}, name = "") => {
+    setClassId(newClassId());
+    setClassName(name || `${selectedSubject?.name || "Class"} – ${reportPeriod}`);
     setStudents(names);
     setStudentInfo(info);
     setActiveCategories(categories);
@@ -194,21 +201,63 @@ export default function Home() {
     }
   };
 
-  const generateFinalBatch = () => {
+  const buildBatch = (names, cats, cData) => {
     let out = "";
-    students.forEach((s, index) => {
+    names.forEach((s, index) => {
       out += `${s}\n`;
-      const cmts = activeCategories
-        .map(c => (classData[s]?.[c.id] || "").trim())
+      const cmts = cats
+        .map(c => (cData[s]?.[c.id] || "").trim())
         .filter(Boolean);
       if (cmts.length > 0) out += cmts.join("\n") + "\n";
-      if (index < students.length - 1) out += "\n-----------------------------------\n\n";
+      if (index < names.length - 1) out += "\n-----------------------------------\n\n";
     });
-    setFinalBatchPrompt(out);
+    return out;
+  };
+
+  const generateFinalBatch = () => setFinalBatchPrompt(buildBatch(students, activeCategories, classData));
+
+  // Save progress to this browser whenever it changes (never to Firebase)
+  useEffect(() => {
+    if (!classId || students.length === 0 || !selectedSubject) return;
+    saveClass({
+      id: classId,
+      name: className,
+      subjectId: selectedSubject.id,
+      subjectName: selectedSubject.name,
+      reportPeriod,
+      students,
+      studentInfo,
+      categories: activeCategories,
+      classData,
+      stepIndex: currentStepIndex,
+    });
+  }, [classId, className, students, studentInfo, activeCategories, classData, currentStepIndex, selectedSubject, reportPeriod]);
+
+  // Carry on with a class saved in this browser
+  const handleResume = (saved) => {
+    const subj = data.subjects.find(s => s.id === saved.subjectId);
+    if (!subj) {
+      alert(`The subject "${saved.subjectName}" can't be found any more, so this class can't be opened.`);
+      return;
+    }
+    setSelectedDept(data.departments.find(d => d.id === subj.department_id) || null);
+    setSelectedSubject(subj);
+    setReportPeriod(saved.reportPeriod);
+    setClassId(saved.id);
+    setClassName(saved.name);
+    setStudents(saved.students);
+    setStudentInfo(saved.studentInfo || {});
+    setActiveCategories(saved.categories);
+    setClassData(saved.classData || {});
+    const step = Math.min(saved.stepIndex || 0, saved.students.length);
+    if (step === saved.students.length) setFinalBatchPrompt(buildBatch(saved.students, saved.categories, saved.classData || {}));
+    setCurrentStepIndex(step);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleReturnStart = () => {
-    if (confirm("Return to start? Current student progress will be lost.")) {
+    if (confirm(`Return to start? Your progress on "${className}" is saved in this browser, so you can continue it later.`)) {
+      setClassId(null);
       setStudents([]);
       setCurrentStepIndex(0);
       setClassData({});
@@ -233,6 +282,10 @@ export default function Home() {
       <main className={`${activeStudent ? "max-w-[1500px]" : "max-w-5xl"} mx-auto px-4 sm:px-6 -mt-8 relative z-10`}>
         {isAdmin && (
           <AdminPanel data={data} onExit={() => setIsAdmin(false)} />
+        )}
+
+        {isSetup && !isAdmin && (
+          <SavedClasses onResume={handleResume} disabled={data.loading} />
         )}
 
         {isSetup && !isAdmin && (
@@ -328,6 +381,7 @@ export default function Home() {
           }}
           isLastStep={currentStepIndex === students.length - 1}
           wide={!!activeStudent}
+          savedNote={classId ? `✓ "${className}" saved in this browser` : null}
           disableNext={!isCurrentStudentComplete}
         />
       )}
