@@ -27,6 +27,7 @@ export default function ClassSetup({
 }) {
   const [pltBusy, setPltBusy] = useState(false);
   const [namesInput, setNamesInput] = useState("");
+  const [className, setClassName] = useState("");
   const [isCreatingSubject, setIsCreatingSubject] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectType, setNewSubjectType] = useState("full");
@@ -89,7 +90,7 @@ export default function ClassSetup({
     }
 
     const info = Object.fromEntries(students.filter(n => classInfo[n]).map(n => [n, classInfo[n]]));
-    onStartClass(students, finalCategories, info);
+    onStartClass(students, finalCategories, info, className.trim());
   };
 
   const handleSaveSubject = () => {
@@ -342,10 +343,17 @@ export default function ClassSetup({
         {/* Step 4: Students */}
         <div className={`space-y-2 transition-opacity ${!selectedSubject ? "opacity-40 pointer-events-none" : ""}`}>
           <Label className="flex items-center gap-2 text-sm font-bold">
-            <Users className="w-4 h-4 text-accent" /> 4. Enter Student Names
+            <Users className="w-4 h-4 text-accent" /> 4. Name Your Class &amp; Enter Students
           </Label>
+          <Input
+            value={className}
+            onChange={(e) => setClassName(e.target.value)}
+            placeholder="Class name, e.g. 10H History"
+            className="max-w-sm"
+          />
+          <p className="text-xs text-muted-foreground -mt-1">Your progress is saved in this browser under this name, so you can come back to it.</p>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">One name per line. These are stored only in your browser session.</p>
+            <p className="text-xs text-muted-foreground">One name per line. Names are stored only in this browser, never online.</p>
             <label className={`text-xs font-bold text-green-700 hover:underline flex items-center gap-1 ${isImporting ? "opacity-50" : "cursor-pointer"}`}>
               <FileSpreadsheet className="w-3.5 h-3.5" />
               {isImporting ? "Reading…" : "Import class from ManageBac"}
