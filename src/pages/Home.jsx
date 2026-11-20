@@ -21,6 +21,7 @@ export default function Home() {
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [reportPeriod, setReportPeriod] = useState("Progress 2");
   const [students, setStudents] = useState([]);
+  const [studentInfo, setStudentInfo] = useState({}); // ManageBac grade + ATL, browser only
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [classData, setClassData] = useState({});
   const [activeCategories, setActiveCategories] = useState([]);
@@ -63,8 +64,9 @@ export default function Home() {
     );
   }, [selectedSubject, data.comments, getEffectivePeriod]);
 
-  const handleStartClass = (names, categories) => {
+  const handleStartClass = (names, categories, info = {}) => {
     setStudents(names);
+    setStudentInfo(info);
     setActiveCategories(categories);
     const initData = {};
     names.forEach(n => { initData[n] = {}; });
@@ -272,6 +274,7 @@ export default function Home() {
             key={activeStudent}
             subject={syncedSubject}
             student={activeStudent}
+            studentInfo={studentInfo[activeStudent]}
             studentIndex={currentStepIndex}
             totalStudents={students.length}
             categories={activeCategories}
