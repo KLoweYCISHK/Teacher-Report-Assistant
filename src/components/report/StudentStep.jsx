@@ -115,6 +115,9 @@ export default function StudentStep({
         </div>
       </div>
 
+      {/* Two columns: comment picking on the left, report preview on the right */}
+      <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-5 lg:items-start">
+      <div className="space-y-4 min-w-0">
 
       {/* Category Progress Tabs */}
       <Card>
@@ -204,9 +207,10 @@ export default function StudentStep({
           />
         </CardContent>
       </Card>
+      </div>
 
-      {/* Preview Panel — bullet point format */}
-      <div className="bg-accent/5 border border-accent/20 rounded-xl p-5">
+      {/* Preview Panel — bullet point format, kept in view on the right */}
+      <aside className="bg-accent/5 border border-accent/20 rounded-xl p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
         <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
           <h3 className="text-xs font-bold text-primary uppercase tracking-wider">
             Final Report Preview — {student}
@@ -222,7 +226,10 @@ export default function StudentStep({
             </Button>
           )}
         </div>
-        <div className="bg-card p-4 rounded-lg border border-accent/10 text-base leading-relaxed shadow-sm">
+        <p className="text-xs text-muted-foreground mb-3">
+          Copy and paste this student's report straight into the school system from here, or wait and download the whole class's reports at the end.
+        </p>
+        <div className="bg-card p-4 rounded-lg border border-accent/10 text-sm leading-relaxed shadow-sm">
           {activeCommentTexts.length > 0 ? (
             <ul className="list-disc list-outside pl-5 space-y-1.5">
               {activeCommentTexts.map((txt, idx) => (
@@ -233,6 +240,7 @@ export default function StudentStep({
             <span className="text-muted-foreground italic">Comments will appear here as you select them...</span>
           )}
         </div>
+      </aside>
       </div>
     </div>
   );
