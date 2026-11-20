@@ -16,6 +16,7 @@ export default function StudentStep({
   studentInfo,
   studentIndex,
   totalStudents,
+  onPrevStudent,
   categories,
   classData,
   comments,
@@ -84,6 +85,15 @@ export default function StudentStep({
 
   const handleCategoryUpdate = (catId, val) => {
     onUpdateStudent(student, catId, val);
+  };
+
+  const handlePrevCategory = () => {
+    if (activeCatIndex > 0) {
+      setActiveCatIndex(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (onPrevStudent) {
+      onPrevStudent();
+    }
   };
 
   const handleNextCategory = () => {
@@ -220,6 +230,8 @@ export default function StudentStep({
             onAddSkill={(skill) => onAddSkill(activeCategory.id, skill)}
             onDeleteSkill={(skill) => onDeleteSkill(activeCategory.id, skill)}
             onNextCategory={!isLastCategory ? handleNextCategory : undefined}
+            onPrevCategory={activeCatIndex > 0 || onPrevStudent ? handlePrevCategory : undefined}
+            prevLabel={activeCatIndex > 0 ? "Previous Category" : "Previous Student"}
             isLastCategory={isLastCategory}
             usedElsewhere={usedElsewhere}
           />
