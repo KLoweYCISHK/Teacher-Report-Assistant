@@ -256,7 +256,7 @@ export default function Home() {
   };
 
   const handleReturnStart = () => {
-    if (confirm(`Return to start? Your progress on "${className}" is saved in this browser, so you can continue it later.`)) {
+    if (confirm(`Go to the home page? Your progress on "${className}" is saved in this browser, so you can continue it later.`)) {
       setClassId(null);
       setStudents([]);
       setCurrentStepIndex(0);
@@ -330,6 +330,7 @@ export default function Home() {
             studentInfo={studentInfo[activeStudent]}
             studentIndex={currentStepIndex}
             totalStudents={students.length}
+            onPrevStudent={currentStepIndex > 0 ? () => { setCurrentStepIndex(currentStepIndex - 1); window.scrollTo(0, 0); } : undefined}
             categories={activeCategories}
             classData={classData}
             comments={data.comments}
