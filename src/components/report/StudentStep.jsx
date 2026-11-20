@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CheckCircle, FileText, Trash2, Globe, Share2,
-  Copy, Check, FileSpreadsheet, Eye, EyeOff, Settings, ChevronUp
+  Copy, Check, FileSpreadsheet, Eye, EyeOff, Settings, X
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
 import { ATL_FIELDS } from "@/lib/importClassList";
@@ -135,7 +135,17 @@ export default function StudentStep({
         )}
         <div className="ml-auto flex items-center gap-2 text-sm">
           <span className="opacity-70 uppercase text-xs font-bold tracking-wide">Subject</span>
-          <span className="bg-white/15 rounded-md px-3 py-1 font-extrabold text-base">{subject?.name}</span>
+          <span className="bg-white/15 rounded-md pl-3 pr-1 py-1 font-extrabold text-base flex items-center gap-1">
+            {subject?.name}
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-1 rounded hover:bg-white/20 transition-colors"
+              title="Subject settings"
+              aria-label="Subject settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </span>
           <span className="bg-accent text-accent-foreground rounded-md px-2 py-1 text-xs font-bold">{reportPeriod}</span>
           <button
             onClick={togglePreview}
@@ -159,42 +169,7 @@ export default function StudentStep({
         <CardContent className="pt-4 pb-3">
           <div className="flex justify-between items-center flex-wrap gap-2 mb-3">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Categories</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className={`text-xs ${showSettings ? "bg-muted" : "text-muted-foreground"}`}
-              onClick={() => setShowSettings(v => !v)}
-              title="Subject settings"
-            >
-              {showSettings ? <ChevronUp className="w-3.5 h-3.5 mr-1" /> : <Settings className="w-3.5 h-3.5 mr-1" />}
-              Settings
-            </Button>
           </div>
-          {showSettings && (
-            <div className="mb-3 p-3 rounded-lg border border-dashed bg-muted/40 space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Comment bank tools for <strong>{subject?.name}</strong>. The clear and share buttons apply to <strong>{activeCategory.label}</strong>.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {onOpenImport && (
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold" onClick={onOpenImport}>
-                    <FileSpreadsheet className="w-3.5 h-3.5 mr-1" /> Upload Performance &amp; Development comments
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" className="text-purple-700 text-xs" onClick={onOpenShareModal}>
-                  <Globe className="w-3 h-3 mr-1" /> Share with Subjects
-                </Button>
-                {isPeriodShareable && PROGRESS_PERIODS.slice(0, -1).includes(reportPeriod) && (
-                  <Button variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id)}>
-                    <Share2 className="w-3 h-3 mr-1" /> Share with Progress 3 / 4
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" className="text-destructive text-xs" onClick={() => onDeleteAllComments(activeCategory.id)}>
-                  <Trash2 className="w-3 h-3 mr-1" /> Clear Bank
-                </Button>
-              </div>
-            </div>
-          )}
           <div className="flex flex-wrap gap-2">
             {categories.map((cat, idx) => {
               const textVal = classData[student]?.[cat.id] || "";
@@ -287,6 +262,47 @@ export default function StudentStep({
       </aside>
       )}
       </div>
+
+      {/* Subject settings side panel */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/40 z-[90] flex justify-end" onClick={() => setShowSettings(false)}>
+          <div className="bg-card w-full max-w-sm h-full shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b bg-muted flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-extrabold flex items-center gap-2"><Settings className="w-5 h-5" /> Subject settings</h2>
+                <p className="text-xs text-muted-foreground">{subject?.name} · {reportPeriod}</p>
+              </div>
+              <button onClick={() => setShowSettings(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-5 overflow-y-auto">
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase text-muted-foreground">Whole subject</p>
+                {onOpenImport && (
+                  <Button className="w-full justify-start bg-green-600 hover:bg-green-700 text-white text-sm font-bold" onClick={() => { setShowSettings(false); onOpenImport(); }}>
+                    <FileSpreadsheet className="w-4 h-4 mr-2" /> Upload comments from Excel
+                  </Button>
+                )}
+                <Button variant="outline" className="w-full justify-start text-purple-700 text-sm" onClick={() => { setShowSettings(false); onOpenShareModal(); }}>
+                  <Globe className="w-4 h-4 mr-2" /> Share with Subjects
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase text-muted-foreground">{activeCategory.label} only</p>
+                {isPeriodShareable && PROGRESS_PERIODS.slice(0, -1).includes(reportPeriod) && (
+                  <Button variant="outline" className="w-full justify-start text-indigo-700 text-sm" onClick={() => { setShowSettings(false); onSharePeriod(activeCategory.id); }}>
+                    <Share2 className="w-4 h-4 mr-2" /> Share with Progress 3 / 4
+                  </Button>
+                )}
+                <Button variant="outline" className="w-full justify-start text-destructive text-sm" onClick={() => { setShowSettings(false); onDeleteAllComments(activeCategory.id); }}>
+                  <Trash2 className="w-4 h-4 mr-2" /> Clear Bank
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
