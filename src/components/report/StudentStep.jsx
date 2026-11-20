@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CheckCircle, FileText, Trash2, Globe, Share2,
-  Copy, Check, FileSpreadsheet, Eye, EyeOff
+  Copy, Check, FileSpreadsheet, Eye, EyeOff, Settings, ChevronUp
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
 import { ATL_FIELDS } from "@/lib/importClassList";
@@ -36,6 +36,7 @@ export default function StudentStep({
   const [activeCatIndex, setActiveCatIndex] = useState(0);
   const [activeSkills, setActiveSkills] = useState({});
   const [copied, setCopied] = useState(false);
+  const [showSettings, setShowSettings] = useState(false); // subject tools, hidden by default
   // Show/hide the Final Report box (remembered between students)
   const [showPreview, setShowPreview] = useState(() => {
     try { return localStorage.getItem("tra_showPreview") !== "0"; } catch { return true; }
@@ -158,17 +159,42 @@ export default function StudentStep({
         <CardContent className="pt-4 pb-3">
           <div className="flex justify-between items-center flex-wrap gap-2 mb-3">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Categories</p>
-            <div className="flex gap-2 flex-wrap">
-              {onOpenImport && (
-                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold" onClick={onOpenImport}>
-                  <FileSpreadsheet className="w-3.5 h-3.5 mr-1" /> Upload Performance &amp; Development comments
-                </Button>
-              )}
-              <Button variant="outline" size="sm" className="text-purple-700 text-xs" onClick={onOpenShareModal}>
-                <Globe className="w-3 h-3 mr-1" /> Share with Subjects
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`text-xs ${showSettings ? "bg-muted" : "text-muted-foreground"}`}
+              onClick={() => setShowSettings(v => !v)}
+              title="Subject settings"
+            >
+              {showSettings ? <ChevronUp className="w-3.5 h-3.5 mr-1" /> : <Settings className="w-3.5 h-3.5 mr-1" />}
+              Settings
+            </Button>
           </div>
+          {showSettings && (
+            <div className="mb-3 p-3 rounded-lg border border-dashed bg-muted/40 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Comment bank tools for <strong>{subject?.name}</strong>. The clear and share buttons apply to <strong>{activeCategory.label}</strong>.
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {onOpenImport && (
+                  <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold" onClick={onOpenImport}>
+                    <FileSpreadsheet className="w-3.5 h-3.5 mr-1" /> Upload Performance &amp; Development comments
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="text-purple-700 text-xs" onClick={onOpenShareModal}>
+                  <Globe className="w-3 h-3 mr-1" /> Share with Subjects
+                </Button>
+                {isPeriodShareable && PROGRESS_PERIODS.slice(0, -1).includes(reportPeriod) && (
+                  <Button variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id)}>
+                    <Share2 className="w-3 h-3 mr-1" /> Share with Progress 3 / 4
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="text-destructive text-xs" onClick={() => onDeleteAllComments(activeCategory.id)}>
+                  <Trash2 className="w-3 h-3 mr-1" /> Clear Bank
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
             {categories.map((cat, idx) => {
               const textVal = classData[student]?.[cat.id] || "";
@@ -198,26 +224,9 @@ export default function StudentStep({
       {/* Comment Editor */}
       <Card>
         <CardHeader className="bg-muted/50 border-b py-3">
-          <div className="flex justify-between items-center flex-wrap gap-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="w-5 h-5 text-accent" /> {activeCategory.label}
-            </CardTitle>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive text-xs"
-                onClick={() => onDeleteAllComments(activeCategory.id)}
-              >
-                <Trash2 className="w-3 h-3 mr-1" /> Clear Bank
-              </Button>
-              {isPeriodShareable && PROGRESS_PERIODS.slice(0, -1).includes(reportPeriod) && (
-                <Button variant="outline" size="sm" className="text-indigo-700 text-xs" onClick={() => onSharePeriod(activeCategory.id)}>
-                  <Share2 className="w-3 h-3 mr-1" /> Share with Progress 3 / 4
-                </Button>
-              )}
-            </div>
-          </div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="w-5 h-5 text-accent" /> {activeCategory.label}
+          </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <CommentCategory
