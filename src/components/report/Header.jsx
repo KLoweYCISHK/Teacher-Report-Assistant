@@ -23,7 +23,7 @@ function fileToSmallDataUrl(file, size = 160) {
   });
 }
 
-export default function Header({ logoUrl, onSetLogo, onOpenAdmin }) {
+export default function Header({ logoUrl, onSetLogo, onOpenAdmin, wide = false }) {
   const [isUploading, setIsUploading] = useState(false);
 
   const handleLogoUpload = async (event) => {
@@ -51,7 +51,7 @@ export default function Header({ logoUrl, onSetLogo, onOpenAdmin }) {
 
   return (
     <div className="bg-primary text-primary-foreground pt-4 pb-12 px-6">
-      <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+      <div className={`${wide ? "max-w-[1500px]" : "max-w-5xl"} mx-auto flex items-center justify-between gap-4`}>
         <div className="flex items-center gap-4">
           <div className="relative group">
             {logoUrl ? (
