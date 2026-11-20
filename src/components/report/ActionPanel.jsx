@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, RotateCcw, CheckCircle, X } from "lucide-react";
 
-export default function ActionPanel({ onBack, onNext, onReturnStart, isLastStep, disableNext, wide = false }) {
+export default function ActionPanel({ onBack, onNext, onReturnStart, isLastStep, disableNext, wide = false, savedNote }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-50">
       <div className={`${wide ? "max-w-[1500px]" : "max-w-5xl"} mx-auto flex justify-between gap-4`}>
@@ -14,6 +14,9 @@ export default function ActionPanel({ onBack, onNext, onReturnStart, isLastStep,
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
         </div>
+        {savedNote && (
+          <span className="hidden md:flex items-center text-xs text-muted-foreground">{savedNote}</span>
+        )}
         <Button
           onClick={onNext}
           disabled={disableNext}
