@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Settings, Save, X, Pencil, Trash2, CheckCircle } from "lucide-react";
-import { getCategoryLevels, normaliseLevel, supportsTabs } from "@/lib/constants";
+import { Plus, Settings, Save, X, Pencil, Trash2, CheckCircle, LayoutList } from "lucide-react";
+import { getCategoryLevels, normaliseLevel, supportsTabs, getLevelColour } from "@/lib/constants";
+
+const ALL_LEVELS = "__all__";
 
 export default function CommentCategory({
   category,
@@ -50,9 +52,21 @@ export default function CommentCategory({
     }
   }, [skillTabs, activeSkill, supportsSkills, onSwitchSkill]);
 
-  const activeComments = comments.filter(
-    c => normaliseLevel(category.id, c.level) === activeLevel && (c.skill_tab || "General") === currentDisplaySkill
-  );
+  const isViewAll = activeLevel === ALL_LEVELS;
+  const levelOf = (c) => normaliseLevel(category.id, c.level);
+  const levelRank = (c) => { const i = levels.indexOf(levelOf(c)); return i < 0 ? levels.length : i; };
+
+  const activeComments = comments
+    .filter(c =>
+      (c.skill_tab || "General") === currentDisplaySkill &&
+      (isViewAll ? true : levelOf(c) === activeLevel)
+    )
+    .sort((a, b) => (isViewAll ? levelRank(a) - levelRank(b) : 0));
+
+  const levelStyle = (lvl) => {
+    const col = getLevelColour(category.id, lvl);
+    return col ? { backgroundColor: col.bg, borderColor: col.border, color: col.text } : undefined;
+  };
 
   const handleSelectComment = (text) => {
     // Toggle: clicking selected comment deselects it
@@ -159,10 +173,11 @@ export default function CommentCategory({
             <button
               key={lvl}
               onClick={() => { setActiveLevel(lvl); setIsAdding(false); setIsManaging(false); }}
-              className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
+              style={levelStyle(lvl)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold border-2 transition-all ${
                 activeLevel === lvl
-                  ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                  : "bg-card text-muted-foreground border-border hover:bg-muted"
+                  ? "shadow-md scale-105 ring-2 ring-offset-1 ring-slate-500"
+                  : "opacity-80 hover:opacity-100"
               } ${
                 usedElsewhere?.level && usedElsewhere.skill === currentDisplaySkill &&
                 normaliseLevel(category.id, usedElsewhere.level) === lvl
@@ -173,6 +188,17 @@ export default function CommentCategory({
               {lvl}
             </button>
           ))}
+          <button
+            onClick={() => { setActiveLevel(ALL_LEVELS); setIsAdding(false); setIsBulkAdding(false); setIsManaging(false); }}
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold border-2 transition-all flex items-center gap-1.5 ${
+              isViewAll
+                ? "bg-primary text-primary-foreground border-primary shadow-md scale-105 ring-2 ring-offset-1 ring-slate-500"
+                : "bg-card text-foreground border-border hover:bg-muted"
+            }`}
+            title="See every comment in this category, colour-coded by level"
+          >
+            <LayoutList className="w-4 h-4" /> View All
+          </button>
         </div>
       )}
 
@@ -182,7 +208,7 @@ export default function CommentCategory({
           <div className="flex justify-between items-center border-b border-accent/20 pb-2">
             <span className="text-sm font-bold text-primary uppercase">
               {supportsSkills && currentDisplaySkill !== "General" ? `${currentDisplaySkill} · ` : ""}
-              {levels.length > 1 ? `${activeLevel} Comments` : "Comments"}
+              {isViewAll ? "All Comments (all levels)" : levels.length > 1 ? `${activeLevel} Comments` : "Comments"}
             </span>
             <div className="flex gap-2">
               <button
@@ -193,6 +219,7 @@ export default function CommentCategory({
               >
                 <Settings className="w-3 h-3" /> Manage
               </button>
+              {!isViewAll && (<>
               <button
                 onClick={() => { setIsAdding(!isAdding); setIsManaging(false); setIsBulkAdding(false); }}
                 className="text-xs text-accent font-bold flex items-center gap-1 hover:underline"
@@ -205,6 +232,7 @@ export default function CommentCategory({
               >
                 <Plus className="w-3 h-3" /> Bulk Add
               </button>
+              </>)}
             </div>
           </div>
 
@@ -266,7 +294,12 @@ export default function CommentCategory({
                     </div>
                   ) : (
                     <>
-                      <span className="flex-1 mr-2 text-foreground">{c.text}</span>
+                      <span className="flex-1 mr-2 text-foreground">
+                        {isViewAll && (
+                          <span style={levelStyle(levelOf(c))} className="inline-block mr-2 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase">{levelOf(c)}</span>
+                        )}
+                        {c.text}
+                      </span>
                       <div className="flex gap-1">
                         <button onClick={() => { setEditingId(c.id); setEditText(c.text); }} className="text-accent hover:text-accent/80">
                           <Pencil className="w-3.5 h-3.5" />
@@ -283,11 +316,35 @@ export default function CommentCategory({
           ) : (
             <div className="space-y-2 max-h-[65vh] overflow-y-auto">
               {activeComments.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">No comments available. Add some above.</p>
+                <p className="text-xs text-muted-foreground text-center py-4">{isViewAll ? "No comments in this tab yet." : "No comments available. Add some above."}</p>
               )}
               {activeComments.map(c => {
                 const isSelected = currentValue === c.text;
                 const isUsedElsewhere = usedElsewhere && c.text.trim() === usedElsewhere.text.trim();
+                if (isViewAll) {
+                  const lvl = levelOf(c);
+                  const col = getLevelColour(category.id, lvl);
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => handleSelectComment(c.text)}
+                      style={col ? { backgroundColor: col.bg, borderColor: isSelected ? "#1e293b" : col.border } : undefined}
+                      className={`w-full text-left text-base leading-snug px-4 py-2.5 rounded-lg transition-all flex items-start gap-3 text-slate-900 hover:brightness-95 ${
+                        isSelected ? "border-[3px] shadow-md font-medium" : "border-2"
+                      } ${isUsedElsewhere ? "ring-2 ring-red-500" : ""}`}
+                    >
+                      <span className={`mt-0.5 w-4 h-4 flex-shrink-0 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-slate-800 bg-slate-800" : "border-slate-500/60 bg-white/60"}`}>
+                        {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
+                      </span>
+                      <span>
+                        <span style={col ? { color: col.text } : undefined} className="block text-[10px] font-bold uppercase tracking-wide mb-0.5">
+                          {lvl}{isUsedElsewhere ? " · Already used in 1. Performance based" : ""}
+                        </span>
+                        {c.text}
+                      </span>
+                    </button>
+                  );
+                }
                 return (
                   <button
                     key={c.id}
