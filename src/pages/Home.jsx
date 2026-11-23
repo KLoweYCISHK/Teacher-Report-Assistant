@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useReportData } from "@/lib/useReportData";
-import { getCommentPeriod, getCategoryLabel, bankCategory, ADMIN_PASSWORD, ADMIN_CATEGORY_IDS, PERIOD_SHARE_CATEGORY_IDS } from "@/lib/constants";
+import { getCommentPeriod, getCategoryLabel, bankCategory, ADMIN_PASSWORD, ADMIN_CATEGORY_IDS, PERIOD_SHARE_CATEGORY_IDS, ADMIN_SUBJECT_ID } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 import Header from "@/components/report/Header";
@@ -17,10 +17,12 @@ import SavedClasses from "@/components/report/SavedClasses.jsx";
 import { saveClass, newClassId } from "@/lib/savedClasses";
 
 export default function Home() {
-  const data = useReportData();
-
   const [selectedDept, setSelectedDept] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  // Load only the comments for the subject being reported on (or the admin bank)
+  const data = useReportData(isAdmin ? ADMIN_SUBJECT_ID : selectedSubject?.id || null);
+
   const [reportPeriod, setReportPeriod] = useState("Progress 2");
   const [students, setStudents] = useState([]);
   const [studentInfo, setStudentInfo] = useState({}); // ManageBac grade + ATL, browser only
@@ -31,7 +33,6 @@ export default function Home() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showPeriodShare, setShowPeriodShare] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   // Saved progress for this class (browser only)
   const [classId, setClassId] = useState(null);
   const [className, setClassName] = useState("");
@@ -276,8 +277,10 @@ export default function Home() {
         onOpenAdmin={isSetup && !isAdmin ? handleOpenAdmin : null}
         wide={!!activeStudent}
       />
-      {data.loading && (
-        <p className="text-center text-sm text-muted-foreground mt-4 relative z-20">Loading comment banks…</p>
+      {(data.loading || data.commentsLoading) && (
+        <p className="text-center text-sm text-muted-foreground mt-4 relative z-20">
+          {data.loading ? "Loading subjects…" : "Loading comments for this subject…"}
+        </p>
       )}
       <main className={`${activeStudent ? "max-w-[1500px]" : "max-w-5xl"} mx-auto px-4 sm:px-6 -mt-8 relative z-10`}>
         {isAdmin && (
