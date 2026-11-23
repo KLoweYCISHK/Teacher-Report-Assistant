@@ -94,3 +94,16 @@ export function normaliseLevel(categoryId, level) {
   if (FREQUENCY_CATEGORY_IDS.includes(categoryId)) return FREQUENCY_LEVEL_MAP[mapped] || mapped;
   return mapped;
 }
+
+// Pastel colours for each level, highest to lowest (used on level buttons and in "View All")
+export const LEVEL_COLOURS = [
+  { bg: "#a5d6a7", border: "#5a9e5e", text: "#1b4d1f" }, // High / Always – pastel dark green
+  { bg: "#dcf1d0", border: "#94c97f", text: "#2f5a1f" }, // Mid/High / Regularly – pastel light green
+  { bg: "#fdf4b8", border: "#e0c74f", text: "#6b5300" }, // Mid/Low / Sometimes – pastel yellow
+  { bg: "#fdd9b5", border: "#e89a55", text: "#7a3d00" }, // Under / Rarely – pastel orange
+];
+
+export function getLevelColour(categoryId, level) {
+  const idx = getCategoryLevels(categoryId).indexOf(level);
+  return idx >= 0 ? LEVEL_COLOURS[idx] : null;
+}
