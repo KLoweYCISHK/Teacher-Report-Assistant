@@ -42,21 +42,30 @@ async function deleteRefs(refs) {
   }
 }
 
+// All comments saved to one subject (one read per comment)
+async function getSubjectComments(subjectId) {
+  const snap = await getDocs(query(collection(db, COL.comments), where("subject_id", "==", subjectId)));
+  return toList(snap);
+}
+
 async function deleteWhere(colName, filters) {
   const q = query(collection(db, colName), ...Object.entries(filters).map(([k, v]) => where(k, "==", v)));
   const snap = await getDocs(q);
   await deleteRefs(snap.docs.map(d => d.ref));
 }
 
-export function useReportData() {
+// Only the chosen subject's comments are loaded (subjectId), so opening the app
+// no longer downloads every comment bank. Pass ADMIN_SUBJECT_ID for the admin page.
+export function useReportData(subjectId = null) {
   const [departments, setDepartments] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [comments, setComments] = useState([]);
   const [logoUrl, setLogoUrl] = useState(null);
   const [adminTabs, setAdminTabsState] = useState({});
-  const [loaded, setLoaded] = useState({ d: false, s: false, c: false });
+  const [loaded, setLoaded] = useState({ d: false, s: false });
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
-  // Live updates for everything (replaces Base44 list + subscribe)
+  // Live updates for departments, subjects and settings (small collections)
   useEffect(() => {
     const unsubs = [
       onSnapshot(collection(db, COL.departments), snap => {
@@ -66,10 +75,6 @@ export function useReportData() {
       onSnapshot(collection(db, COL.subjects), snap => {
         setSubjects(toList(snap).sort(byName));
         setLoaded(p => ({ ...p, s: true }));
-      }),
-      onSnapshot(collection(db, COL.comments), snap => {
-        setComments(toList(snap).sort(bySortOrder));
-        setLoaded(p => ({ ...p, c: true }));
       }),
       onSnapshot(doc(db, COL.settings, "logo"), snap => {
         setLogoUrl(snap.exists() ? snap.data().value || null : null);
@@ -81,7 +86,19 @@ export function useReportData() {
     return () => unsubs.forEach(u => u());
   }, []);
 
-  const loading = !(loaded.d && loaded.s && loaded.c);
+  // Live updates for the chosen subject's comments only
+  useEffect(() => {
+    setComments([]);
+    if (!subjectId) { setCommentsLoading(false); return; }
+    setCommentsLoading(true);
+    const q = query(collection(db, COL.comments), where("subject_id", "==", subjectId));
+    return onSnapshot(q, snap => {
+      setComments(toList(snap).sort(bySortOrder));
+      setCommentsLoading(false);
+    });
+  }, [subjectId]);
+
+  const loading = !(loaded.d && loaded.s);
 
   const addDepartment = async (name) => {
     const existing = departments.find(d => d.name === name);
@@ -200,14 +217,15 @@ export function useReportData() {
     const periods = [...REPORT_PERIODS, "shared"];
 
     for (const targetSubjectId of targetSubjectIds) {
+      const targetComments = await getSubjectComments(targetSubjectId);
       const records = [];
       for (const category of cats) {
         for (const period of periods) {
           const sourceComments = comments.filter(c =>
             c.subject_id === sourceSubjectId && c.category === category && c.period === period
           );
-          const existingTargetComments = comments.filter(c =>
-            c.subject_id === targetSubjectId && c.category === category && c.period === period
+          const existingTargetComments = targetComments.filter(c =>
+            c.category === category && c.period === period
           );
           sourceComments
             .filter(sc => !existingTargetComments.some(ec =>
@@ -259,11 +277,10 @@ export function useReportData() {
   // PLT Generated comments: replace each target subject's Attitude to Learning and Homework
   // banks with the admin bank in every progress report, and mark the subject as using PLT comments.
   const applyPltComments = async (targetSubjectIds) => {
-    const allComments = toList(await getDocs(collection(db, COL.comments)));
     const allSubjects = toList(await getDocs(collection(db, COL.subjects)));
     const seen = new Set();
-    const source = allComments
-      .filter(c => c.subject_id === ADMIN_SUBJECT_ID && ADMIN_CATEGORY_IDS.includes(c.category))
+    const source = (await getSubjectComments(ADMIN_SUBJECT_ID))
+      .filter(c => ADMIN_CATEGORY_IDS.includes(c.category))
       .filter(c => {
         const key = [c.category, c.level, c.skill_tab || "General", c.text].join("|");
         if (seen.has(key)) return false;
@@ -272,9 +289,12 @@ export function useReportData() {
       });
     if (source.length === 0) throw new Error("NO_PLT_COMMENTS");
 
-    const toDelete = allComments.filter(c =>
-      targetSubjectIds.includes(c.subject_id) && ADMIN_CATEGORY_IDS.includes(c.category)
-    );
+    const toDelete = [];
+    for (const id of targetSubjectIds) {
+      (await getSubjectComments(id))
+        .filter(c => ADMIN_CATEGORY_IDS.includes(c.category))
+        .forEach(c => toDelete.push(c));
+    }
     await deleteRefs(toDelete.map(c => doc(db, COL.comments, c.id)));
 
     const records = [];
@@ -307,8 +327,7 @@ export function useReportData() {
   // Older admin comments were saved per progress report. Merge them into one bank,
   // dropping duplicates, so the admin page no longer needs a progress report choice.
   const consolidateAdminComments = async () => {
-    const admin = toList(await getDocs(collection(db, COL.comments)))
-      .filter(c => c.subject_id === ADMIN_SUBJECT_ID);
+    const admin = await getSubjectComments(ADMIN_SUBJECT_ID);
     if (!admin.some(c => c.period !== ADMIN_PERIOD)) return;
     const order = { [ADMIN_PERIOD]: 0, "Progress 2": 1, "Progress 3": 2, "Progress 4": 3 };
     admin.sort((a, b) => (order[a.period] ?? 9) - (order[b.period] ?? 9));
@@ -349,6 +368,7 @@ export function useReportData() {
     comments,
     logoUrl,
     loading,
+    commentsLoading,
     addDepartment,
     deleteDepartment,
     addSubject,
