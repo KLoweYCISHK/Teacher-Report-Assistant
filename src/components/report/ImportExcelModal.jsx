@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { X, FileSpreadsheet, Upload } from "lucide-react";
-import { readWorkbook, readSheet } from "@/lib/importCommentBank";
+import { readWorkbook, readSheet, categoryForSheet } from "@/lib/importCommentBank";
 import ImportFormatGuide from "./ImportFormatGuide.jsx";
 
 const TARGETS = [
@@ -12,7 +12,18 @@ const TARGETS = [
   { id: "Homework", label: "Homework" },
 ];
 
-export default function ImportExcelModal({ subjectName, reportPeriod, onClose, onConfirm }) {
+// Chinese department: Reading and Writing have their own banks
+const CHINESE_TARGETS = [
+  { id: "", label: "Don't import" },
+  { id: "Assessment", label: "Reading" },
+  { id: "Performance2", label: "Writing" },
+  { id: "Improvement", label: "Development" },
+  { id: "HPL", label: "Attitude to Learning" },
+  { id: "Homework", label: "Homework" },
+];
+
+export default function ImportExcelModal({ subjectName, reportPeriod, isChinese = false, onClose, onConfirm }) {
+  const targetList = isChinese ? CHINESE_TARGETS : TARGETS;
   const [sheets, setSheets] = useState(null);
   const [fileName, setFileName] = useState("");
   const [targets, setTargets] = useState({});
@@ -27,7 +38,7 @@ export default function ImportExcelModal({ subjectName, reportPeriod, onClose, o
       const read = await readWorkbook(f);
       setFileName(f.name);
       setSheets(read);
-      setTargets(Object.fromEntries(read.map(s => [s.sheetName, s.guess || ""])));
+      setTargets(Object.fromEntries(read.map(s => [s.sheetName, categoryForSheet(s.sheetName, isChinese) || ""])));
     } catch (err) {
       console.error(err);
       alert("Could not read that file. Please choose an Excel (.xlsx) file.");
@@ -38,7 +49,7 @@ export default function ImportExcelModal({ subjectName, reportPeriod, onClose, o
 
   const plan = useMemo(() => (sheets || [])
     .filter(s => targets[s.sheetName])
-    .map(s => ({ sheetName: s.sheetName, categoryId: targets[s.sheetName], ...readSheet(s.rows, targets[s.sheetName]) })),
+    .map(s => ({ sheetName: s.sheetName, categoryId: targets[s.sheetName], ...readSheet(s.rows, targets[s.sheetName], targetList.find(t => t.id === targets[s.sheetName])?.label) })),
   [sheets, targets]);
 
   const duplicateTarget = plan.length !== new Set(plan.map(p => p.categoryId)).size;
@@ -71,7 +82,7 @@ export default function ImportExcelModal({ subjectName, reportPeriod, onClose, o
 
           <div className="bg-muted/60 border rounded-lg p-4">
             <p className="text-xs font-bold uppercase text-muted-foreground mb-2">Required format</p>
-            <ImportFormatGuide />
+            <ImportFormatGuide isChinese={isChinese} />
           </div>
 
           <label className="flex items-center justify-center gap-2 border-2 border-dashed border-accent/40 rounded-lg p-5 cursor-pointer hover:bg-accent/5 text-sm font-bold text-accent">
@@ -91,7 +102,7 @@ export default function ImportExcelModal({ subjectName, reportPeriod, onClose, o
                     onChange={(e) => setTargets(prev => ({ ...prev, [s.sheetName]: e.target.value }))}
                     className="border rounded-md px-2 py-1 text-sm bg-card"
                   >
-                    {TARGETS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                    {targetList.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                   </select>
                 </div>
                 {p ? (

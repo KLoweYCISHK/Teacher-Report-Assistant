@@ -4,21 +4,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Share2, Briefcase } from "lucide-react";
-import { PERIOD_SHARE_CATEGORY_IDS, getCategoryLabel } from "@/lib/constants";
+import { getShareOptions } from "@/lib/constants";
 
-// 1. and 2. Performance based share one bank, so they appear as one option
-const SHARE_OPTIONS = PERIOD_SHARE_CATEGORY_IDS.map(id => ({
-  id,
-  label: id === "Assessment" ? "Performance based (1 & 2)" : getCategoryLabel(id),
-}));
 
 export default function ShareModal({
   currentSubjectId,
+  isChinese = false,
   subjects,
   departments,
   onClose,
   onConfirm,
 }) {
+  // 1. and 2. Performance based share one bank, so they appear as one option (Chinese: Reading and Writing are separate)
+  const SHARE_OPTIONS = getShareOptions(isChinese);
   const [selected, setSelected] = useState([]);
   const [cats, setCats] = useState([]);
   const toggleCat = (id) => setCats(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);

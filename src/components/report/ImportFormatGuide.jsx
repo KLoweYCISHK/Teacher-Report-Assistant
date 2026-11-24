@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 const HEADERS = ["Categories", "High Achieving", "Mid/High Achieving", "Mid/Low Achieving", "Under Achieving"];
 
 // Builds and downloads a blank workbook in the right format
-export async function downloadTemplate() {
+export async function downloadTemplate(chinese = false) {
   const XLSX = await import("xlsx");
   const wb = XLSX.utils.book_new();
   const perf = [
@@ -30,7 +30,8 @@ export async function downloadTemplate() {
     ["", "Always comment 1", "Regularly comment 1", "Sometimes comment 1", "Rarely comment 1"],
     ["", "Always comment 2", "Regularly comment 2", "Sometimes comment 2", "Rarely comment 2"],
   ];
-  [["Performance based", perf], ["Development", dev], ["ATL", atl], ["Homework", hw]].forEach(([name, rows]) => {
+  const firstSheets = chinese ? [["Reading", perf], ["Writing", perf]] : [["Performance based", perf]];
+  [...firstSheets, ["Development", dev], ["ATL", atl], ["Homework", hw]].forEach(([name, rows]) => {
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"] = [{ wch: 32 }, { wch: 40 }, { wch: 40 }, { wch: 40 }, { wch: 40 }];
     XLSX.utils.book_append_sheet(wb, ws, name);
@@ -38,11 +39,13 @@ export async function downloadTemplate() {
   XLSX.writeFile(wb, "Comment_Bank_Template.xlsx");
 }
 
-export default function ImportFormatGuide({ compact = false }) {
+export default function ImportFormatGuide({ compact = false, isChinese = false }) {
   return (
     <div className="space-y-3 text-sm">
       <ol className="list-decimal pl-5 space-y-1 text-foreground">
-        <li>One Excel file (.xlsx) with sheets named <strong>Performance based</strong> and <strong>Development</strong>. You can also add optional <strong>ATL</strong> (Attitude to Learning) and <strong>Homework</strong> sheets.</li>
+        {isChinese
+          ? <li>One Excel file (.xlsx) with sheets named <strong>Reading</strong>, <strong>Writing</strong> and <strong>Development</strong>. You can also add optional <strong>ATL</strong> (Attitude to Learning) and <strong>Homework</strong> sheets.</li>
+          : <li>One Excel file (.xlsx) with sheets named <strong>Performance based</strong> and <strong>Development</strong>. You can also add optional <strong>ATL</strong> (Attitude to Learning) and <strong>Homework</strong> sheets.</li>}
         <li><strong>Row 1</strong> is headings: Categories | High Achieving | Mid/High Achieving | Mid/Low Achieving | Under Achieving. On the ATL and Homework sheets use Always | Regularly | Sometimes | Rarely.</li>
         <li><strong>Column A</strong> is the tab name. Rows with the same name all go into the same tab. A blank cell counts as the tab above. If column A is left empty, the comments go into one tab named after the category.</li>
         <li><strong>Columns B–E</strong> are the four levels. Each cell is one comment. Empty cells are fine.</li>
@@ -71,7 +74,7 @@ export default function ImportFormatGuide({ compact = false }) {
           </table>
         </div>
       )}
-      <Button type="button" variant="outline" size="sm" className="text-green-700 border-green-300" onClick={downloadTemplate}>
+      <Button type="button" variant="outline" size="sm" className="text-green-700 border-green-300" onClick={() => downloadTemplate(isChinese)}>
         <Download className="w-3.5 h-3.5 mr-1" /> Download blank template
       </Button>
     </div>

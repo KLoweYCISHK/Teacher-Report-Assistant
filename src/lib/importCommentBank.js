@@ -8,8 +8,12 @@ const SHEET_MATCHERS = [
   { id: "Homework", test: n => /homework/.test(n) },
 ];
 
-export function categoryForSheet(sheetName) {
+export function categoryForSheet(sheetName, chinese = false) {
   const n = sheetName.toLowerCase();
+  if (chinese) {
+    if (/reading|閱讀|阅读/.test(n)) return "Assessment";
+    if (/writing|寫作|写作/.test(n)) return "Performance2";
+  }
   return SHEET_MATCHERS.find(m => m.test(n))?.id || null;
 }
 
@@ -20,7 +24,7 @@ const clean = (v) => String(v ?? "").replace(/\s+/g, " ").trim();
 //   empty from the start, comments go into a tab named after the category)
 //   columns B onwards = the category's levels in order, one comment per cell
 // Rows with the same tab name all go into the same tab.
-export function readSheet(rows, categoryId) {
+export function readSheet(rows, categoryId, label) {
   const levels = getCategoryLevels(categoryId);
   const tabs = [];
   const comments = [];
@@ -32,7 +36,7 @@ export function readSheet(rows, categoryId) {
     // Skip the header row (e.g. "Categories | High Achieving | ..." or " | Always | Regularly | ...")
     if (i === 0 && (/categor|tab/i.test(a) || /achiev|always/i.test(b))) return;
     if (a) tab = a;
-    if (!tab) tab = getCategoryLabel(categoryId);
+    if (!tab) tab = label || getCategoryLabel(categoryId);
     levels.forEach((level, idx) => {
       const text = clean(row[idx + 1]);
       if (!text) return;

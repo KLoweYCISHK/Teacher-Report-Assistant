@@ -3,15 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { X, Share2, CalendarRange } from "lucide-react";
-import { PROGRESS_PERIODS, PERIOD_SHARE_CATEGORY_IDS, getCategoryLabel } from "@/lib/constants";
+import { PROGRESS_PERIODS, getShareOptions } from "@/lib/constants";
 
-// 1. and 2. Performance based share one bank, so they appear as one option
-const SHARE_OPTIONS = PERIOD_SHARE_CATEGORY_IDS.map(id => ({
-  id,
-  label: id === "Assessment" ? "Performance based (1 & 2)" : getCategoryLabel(id),
-}));
 
-export default function PeriodShareModal({ sourcePeriod, onClose, onConfirm }) {
+export default function PeriodShareModal({ sourcePeriod, isChinese = false, onClose, onConfirm }) {
+  // 1. and 2. Performance based share one bank, so they appear as one option (Chinese: Reading and Writing are separate)
+  const SHARE_OPTIONS = getShareOptions(isChinese);
   const [selected, setSelected] = useState([]);
   const [cats, setCats] = useState([]);
   const toggleCat = (id) => setCats(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);

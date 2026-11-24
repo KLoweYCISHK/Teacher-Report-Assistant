@@ -26,7 +26,13 @@ export default function CommentCategory({
   prevLabel = "Previous Category",
   isLastCategory,
   usedElsewhere,
+  pickCount = 1,
+  selectedParts,
+  onChangeParts,
 }) {
+  // Multi-pick (Chinese Reading / Writing): several comments join into one bullet point
+  const isMulti = pickCount > 1 && Array.isArray(selectedParts) && !!onChangeParts;
+  const isPicked = (text) => isMulti ? selectedParts.includes(text) : currentValue === text;
   const levels = getCategoryLevels(category.id);
   const [activeLevel, setActiveLevel] = useState(levels[0] || null);
   const [isAdding, setIsAdding] = useState(false);
@@ -69,6 +75,15 @@ export default function CommentCategory({
   };
 
   const handleSelectComment = (text) => {
+    if (isMulti) {
+      if (selectedParts.includes(text)) { onChangeParts(selectedParts.filter(t => t !== text)); return; }
+      if (selectedParts.length >= pickCount) {
+        alert(`You can choose ${pickCount} comments here. Untick one first.`);
+        return;
+      }
+      onChangeParts([...selectedParts, text]);
+      return;
+    }
     // Toggle: clicking selected comment deselects it
     onChange(currentValue === text ? "" : text);
   };
@@ -319,7 +334,7 @@ export default function CommentCategory({
                 <p className="text-xs text-muted-foreground text-center py-4">{isViewAll ? "No comments in this tab yet." : "No comments available. Add some above."}</p>
               )}
               {activeComments.map(c => {
-                const isSelected = currentValue === c.text;
+                const isSelected = isPicked(c.text);
                 const isUsedElsewhere = usedElsewhere && c.text.trim() === usedElsewhere.text.trim();
                 if (isViewAll) {
                   const lvl = levelOf(c);
@@ -379,10 +394,12 @@ export default function CommentCategory({
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
           <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-green-700 uppercase mb-1">Selected Comment</p>
+            <p className="text-xs font-bold text-green-700 uppercase mb-1">
+              {isMulti ? `Selected Comments (${selectedParts.length} of ${pickCount}) — shown as one bullet point` : "Selected Comment"}
+            </p>
             <p className="text-base text-green-900">{currentValue}</p>
           </div>
-          <button onClick={() => onChange("")} className="text-green-600 hover:text-destructive ml-2 flex-shrink-0">
+          <button onClick={() => isMulti ? onChangeParts([]) : onChange("")} className="text-green-600 hover:text-destructive ml-2 flex-shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>

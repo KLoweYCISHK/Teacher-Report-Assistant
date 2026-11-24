@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useReportData } from "@/lib/useReportData";
-import { getCommentPeriod, getCategoryLabel, bankCategory, ADMIN_PASSWORD, ADMIN_CATEGORY_IDS, PERIOD_SHARE_CATEGORY_IDS, ADMIN_SUBJECT_ID } from "@/lib/constants";
+import { getCommentPeriod, getCategoryLabel, bankCategory as baseBankCategory, isChineseSubject, ADMIN_PASSWORD, ADMIN_CATEGORY_IDS, PERIOD_SHARE_CATEGORY_IDS, ADMIN_SUBJECT_ID } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 import Header from "@/components/report/Header";
@@ -43,6 +43,14 @@ export default function Home() {
     if (pw === ADMIN_PASSWORD) setIsAdmin(true);
     else alert("Incorrect password.");
   };
+
+  // Chinese department uses separate 1. Reading and 2. Writing banks
+  const isChinese = isChineseSubject(selectedSubject, data.departments);
+  const bankCategory = (id) => baseBankCategory(id, isChinese);
+
+  // Classes started before the change keep their saved labels, so relabel Reading / Writing here
+  const displayCategories = activeCategories.map(c =>
+    c.id === "Assessment" || c.id === "Performance2" ? { ...c, label: getCategoryLabel(c.id, isChinese) } : c);
 
   const isSetup = students.length === 0;
   const isResultStep = !isSetup && currentStepIndex === students.length;
@@ -132,7 +140,7 @@ export default function Home() {
   const handleDeleteAllComments = async (categoryId) => {
     categoryId = bankCategory(categoryId);
     if (!selectedSubject) return;
-    const displayCat = getCategoryLabel(categoryId);
+    const displayCat = getCategoryLabel(categoryId, isChinese);
     const period = getEffectivePeriod(categoryId);
     if (!confirm(`Delete ALL ${displayCat} comments for ${selectedSubject.name} in ${period}?`)) return;
     await data.deleteAllCommentsInCategory(selectedSubject.id, categoryId, period);
@@ -156,7 +164,7 @@ export default function Home() {
     if (!selectedSubject || !cats?.length) return;
     const sourcePeriod = reportPeriod;
     const list = targetPeriods.join(" and ");
-    const catNames = cats.map(c => c === "Assessment" ? "Performance based" : getCategoryLabel(c)).join(", ");
+    const catNames = cats.map(c => c === "Assessment" && !isChinese ? "Performance based" : getCategoryLabel(c, isChinese)).join(", ");
     if (!confirm(`Replace the ${catNames} comments in ${list} with ${sourcePeriod}'s?`)) return;
     try {
       for (const target of targetPeriods) {
@@ -329,12 +337,13 @@ export default function Home() {
           <StudentStep
             key={activeStudent}
             subject={syncedSubject}
+            isChinese={isChinese}
             student={activeStudent}
             studentInfo={studentInfo[activeStudent]}
             studentIndex={currentStepIndex}
             totalStudents={students.length}
             onPrevStudent={currentStepIndex > 0 ? () => { setCurrentStepIndex(currentStepIndex - 1); window.scrollTo(0, 0); } : undefined}
-            categories={activeCategories}
+            categories={displayCategories}
             classData={classData}
             comments={data.comments}
             getCommentsForCategory={(catId, skill) => {
@@ -393,6 +402,7 @@ export default function Home() {
       {showPeriodShare && (
         <PeriodShareModal
           sourcePeriod={reportPeriod}
+          isChinese={isChinese}
           onClose={() => setShowPeriodShare(false)}
           onConfirm={handleSharePeriods}
         />
@@ -401,6 +411,7 @@ export default function Home() {
       {showImport && syncedSubject && (
         <ImportExcelModal
           subjectName={syncedSubject.name}
+          isChinese={isChinese}
           reportPeriod={reportPeriod}
           onClose={() => setShowImport(false)}
           onConfirm={handleImportExcel}
@@ -410,6 +421,7 @@ export default function Home() {
       {showShareModal && syncedSubject && (
         <ShareModal
           currentSubjectId={syncedSubject.id}
+          isChinese={isChinese}
           subjects={data.subjects}
           departments={data.departments}
           onClose={() => setShowShareModal(false)}

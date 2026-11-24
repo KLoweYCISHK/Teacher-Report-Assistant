@@ -58,13 +58,66 @@ export function getTabList(categoryId, customTabs = []) {
 // The admin (PLT) bank is not tied to a progress report; subjects get it in every progress report
 export const ADMIN_PERIOD = "shared";
 
-// 1. and 2. Performance based share one comment bank and one set of tabs
-export function bankCategory(categoryId) {
+// Chinese department: 1. Reading and 2. Writing replace the two Performance based categories.
+// They keep the same IDs (so the rest of the app works unchanged) but have separate comment banks,
+// and staff pick up to 2 comments in each, which join into one bullet point.
+const CHINESE_LABELS = { Assessment: "1. Reading", Performance2: "2. Writing" };
+const CHINESE_SHORT_LABELS = { Assessment: "Reading", Performance2: "Writing" };
+export const CHINESE_PICK_COUNT = 2;
+export const CHINESE_MULTI_CATEGORY_IDS = ["Assessment", "Performance2"];
+
+export function isChineseDept(dept) {
+  return /chinese|中文|mandarin|putonghua/i.test(dept?.name || "");
+}
+
+export function isChineseSubject(subject, departments = []) {
+  return /chinese|中文|mandarin|putonghua/i.test(subject?.name || "")
+    || isChineseDept(departments.find(d => d.id === subject?.department_id));
+}
+
+export function getCategories(chinese = false) {
+  if (!chinese) return STANDARD_CATEGORIES;
+  return STANDARD_CATEGORIES.map(c => CHINESE_LABELS[c.id] ? { ...c, label: CHINESE_LABELS[c.id] } : c);
+}
+
+export function getOptionalCategories(chinese = false) {
+  return getCategories(chinese).filter(c => !REQUIRED_CATEGORY_IDS.includes(c.id));
+}
+
+// Categories offered by "Share with Progress Report" / "Share to subjects", with their labels
+export function getShareOptions(chinese = false) {
+  const ids = chinese
+    ? ["HPL", "Homework", "Assessment", "Performance2", "Improvement"]
+    : PERIOD_SHARE_CATEGORY_IDS;
+  return ids.map(id => ({
+    id,
+    label: chinese && CHINESE_SHORT_LABELS[id]
+      ? CHINESE_SHORT_LABELS[id]
+      : id === "Assessment" ? "Performance based (1 & 2)" : getCategoryLabel(id),
+  }));
+}
+
+// How many comments can be picked (and joined into one bullet) in a category
+export function getPickCount(categoryId, chinese = false) {
+  return chinese && CHINESE_MULTI_CATEGORY_IDS.includes(categoryId) ? CHINESE_PICK_COUNT : 1;
+}
+
+// Joins picked comments into one bullet point (no space after Chinese punctuation)
+export function joinComments(parts) {
+  return parts.reduce((out, t) => {
+    if (!out) return t;
+    return /[\u3000-\u303f\uff00-\uffef\u4e00-\u9fff]$/.test(out) ? out + t : `${out} ${t}`;
+  }, "");
+}
+
+// 1. and 2. Performance based share one comment bank and one set of tabs (not for Chinese)
+export function bankCategory(categoryId, chinese = false) {
+  if (chinese) return categoryId;
   return categoryId === "Performance2" ? "Assessment" : categoryId;
 }
 
-export function getCategoryLabel(categoryId) {
-  return STANDARD_CATEGORIES.find(c => c.id === categoryId)?.label || categoryId;
+export function getCategoryLabel(categoryId, chinese = false) {
+  return getCategories(chinese).find(c => c.id === categoryId)?.label || categoryId;
 }
 
 // Determines whether a category's comments are shared across periods or period-specific

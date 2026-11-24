@@ -8,10 +8,11 @@ import {
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
 import { ATL_FIELDS } from "@/lib/importClassList";
-import { PROGRESS_PERIODS, bankCategory, ADMIN_CATEGORY_IDS, supportsTabs, getTabList } from "@/lib/constants";
+import { PROGRESS_PERIODS, bankCategory as baseBankCategory, ADMIN_CATEGORY_IDS, supportsTabs, getTabList, getPickCount, joinComments } from "@/lib/constants";
 
 export default function StudentStep({
   subject,
+  isChinese = false,
   student,
   studentInfo,
   studentIndex,
@@ -34,6 +35,7 @@ export default function StudentStep({
   onAddSkill,
   onDeleteSkill,
 }) {
+  const bankCategory = (id) => baseBankCategory(id, isChinese);
   const [activeCatIndex, setActiveCatIndex] = useState(0);
   const [activeSkills, setActiveSkills] = useState({});
   const [copied, setCopied] = useState(false);
@@ -67,7 +69,8 @@ export default function StudentStep({
   const getSkill = (catId) => activeSkills[catId] || "";
 
   // On 2. Performance based, flag the tab, level and comment already used in 1. Performance based
-  const firstPerformanceText = activeCategory?.id === "Performance2"
+  // (Chinese Reading and Writing have separate banks, so this doesn't apply)
+  const firstPerformanceText = activeCategory?.id === "Performance2" && !isChinese
     ? (classData[student]?.Assessment || "").trim()
     : "";
   let usedElsewhere = null;
@@ -85,6 +88,21 @@ export default function StudentStep({
 
   const handleCategoryUpdate = (catId, val) => {
     onUpdateStudent(student, catId, val);
+  };
+
+  // Chinese Reading / Writing: up to 2 comments joined into one bullet point.
+  // The picked comments are kept alongside so they can be ticked/unticked.
+  const pickCount = getPickCount(activeCategory?.id, isChinese);
+  const partsKey = (catId) => `${catId}__parts`;
+  const getParts = (catId) => {
+    const saved = classData[student]?.[partsKey(catId)];
+    if (Array.isArray(saved)) return saved;
+    const val = (classData[student]?.[catId] || "").trim();
+    return val ? [val] : [];
+  };
+  const handlePartsUpdate = (catId, parts) => {
+    onUpdateStudent(student, partsKey(catId), parts);
+    onUpdateStudent(student, catId, joinComments(parts));
   };
 
   const handlePrevCategory = () => {
@@ -234,6 +252,9 @@ export default function StudentStep({
             prevLabel={activeCatIndex > 0 ? "Previous Category" : "Previous Student"}
             isLastCategory={isLastCategory}
             usedElsewhere={usedElsewhere}
+            pickCount={pickCount}
+            selectedParts={pickCount > 1 ? getParts(activeCategory.id) : undefined}
+            onChangeParts={pickCount > 1 ? (parts) => handlePartsUpdate(activeCategory.id, parts) : undefined}
           />
         </CardContent>
       </Card>

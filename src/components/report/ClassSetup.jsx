@@ -11,7 +11,7 @@ import {
   BookOpen, Calendar, Users, Plus, Trash2, ArrowRight,
   Briefcase, Filter, FileText, Check, Upload, Sparkles, FileSpreadsheet
 } from "lucide-react";
-import { REPORT_PERIODS, OPTIONAL_CATEGORIES, STANDARD_CATEGORIES, REQUIRED_CATEGORY_IDS } from "@/lib/constants";
+import { REPORT_PERIODS, REQUIRED_CATEGORY_IDS, getCategories, getOptionalCategories, isChineseDept, isChineseSubject } from "@/lib/constants";
 import { readClassList } from "@/lib/importClassList";
 
 
@@ -39,6 +39,10 @@ export default function ClassSetup({
   }, [selectedSubject?.id]);
 
   const filteredSubjects = subjects.filter(s => s.department_id === selectedDept?.id);
+  // Chinese department: 1. Reading and 2. Writing instead of the Performance based categories
+  const isChinese = isChineseDept(selectedDept) || isChineseSubject(selectedSubject);
+  const STANDARD_CATEGORIES = getCategories(isChinese);
+  const OPTIONAL_CATEGORIES = getOptionalCategories(isChinese);
   const isSharedStyle = selectedSubject?.report_type === "shared";
   const showSharedConfig = isSharedStyle && reportPeriod !== "Mocks";
   const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
@@ -242,7 +246,7 @@ export default function ClassSetup({
                 </SelectContent>
               </Select>
               {selectedSubject && onOpenImport && (
-                <Button variant="outline" className="text-green-700 hover:text-green-800" onClick={onOpenImport} title="Import Performance based and Development comments from Excel">
+                <Button variant="outline" className="text-green-700 hover:text-green-800" onClick={onOpenImport} title={isChinese ? "Import Reading, Writing and Development comments from Excel" : "Import Performance based and Development comments from Excel"}>
                   <FileSpreadsheet className="w-4 h-4 mr-1" /> Import from Excel
                 </Button>
               )}
@@ -309,7 +313,7 @@ export default function ClassSetup({
                 <Filter className="w-5 h-5 text-accent" />
                 <h3 className="font-bold">Configure Categories</h3>
               </div>
-              <p className="text-sm text-muted-foreground">Both Performance based categories and Development are compulsory. Select at least one optional.</p>
+              <p className="text-sm text-muted-foreground">{isChinese ? "Reading, Writing" : "Both Performance based categories"} and Development are compulsory. Select at least one optional.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {STANDARD_CATEGORIES.filter(c => REQUIRED_CATEGORY_IDS.includes(c.id)).map(c => (
                   <div key={c.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg opacity-70 cursor-not-allowed">
