@@ -181,6 +181,16 @@ export default function CommentCategory({
         </div>
       )}
 
+      {/* Chinese Reading / Writing: staff must pick exactly 2 comments */}
+      {isMulti && (
+        <div className={`rounded-lg border-2 px-4 py-3 text-sm font-bold ${
+          selectedParts.length === pickCount ? "bg-green-50 border-green-300 text-green-800" : "bg-amber-50 border-amber-300 text-amber-900"
+        }`}>
+          You must choose {pickCount} comments for {category.label.replace(/^\d+\.\s*/, "")} ({selectedParts.length} of {pickCount} chosen).
+          They will be joined with a full stop into one bullet point.
+        </div>
+      )}
+
       {/* Level Buttons */}
       {levels.length > 1 && (
         <div className="flex flex-wrap gap-2 items-center">
@@ -416,7 +426,8 @@ export default function CommentCategory({
           {onNextCategory && (
           <Button
             onClick={onNextCategory}
-            disabled={!currentValue}
+            disabled={isMulti ? selectedParts.length !== pickCount : !currentValue}
+            title={isMulti && selectedParts.length !== pickCount ? `Choose ${pickCount} comments to continue` : undefined}
             className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold"
           >
             Next Category →

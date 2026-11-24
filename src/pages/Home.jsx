@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useReportData } from "@/lib/useReportData";
-import { getCommentPeriod, getCategoryLabel, bankCategory as baseBankCategory, isChineseSubject, ADMIN_PASSWORD, ADMIN_CATEGORY_IDS, PERIOD_SHARE_CATEGORY_IDS, ADMIN_SUBJECT_ID } from "@/lib/constants";
+import { getCommentPeriod, getCategoryLabel, bankCategory as baseBankCategory, isChineseSubject, getPickCount, ADMIN_PASSWORD, ADMIN_CATEGORY_IDS, PERIOD_SHARE_CATEGORY_IDS, ADMIN_SUBJECT_ID } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 import Header from "@/components/report/Header";
@@ -56,8 +56,13 @@ export default function Home() {
   const isResultStep = !isSetup && currentStepIndex === students.length;
   const activeStudent = !isSetup && !isResultStep ? students[currentStepIndex] : null;
 
+  // Chinese Reading / Writing need exactly 2 comments each
   const isCurrentStudentComplete = activeStudent
-    ? activeCategories.every(c => (classData[activeStudent]?.[c.id] || "").trim().length > 0)
+    ? activeCategories.every(c => {
+        const need = getPickCount(c.id, isChinese);
+        if (need > 1) return (classData[activeStudent]?.[`${c.id}__parts`] || []).length === need;
+        return (classData[activeStudent]?.[c.id] || "").trim().length > 0;
+      })
     : true;
 
   // Resolve period for a category

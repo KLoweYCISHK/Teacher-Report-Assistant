@@ -102,11 +102,16 @@ export function getPickCount(categoryId, chinese = false) {
   return chinese && CHINESE_MULTI_CATEGORY_IDS.includes(categoryId) ? CHINESE_PICK_COUNT : 1;
 }
 
-// Joins picked comments into one bullet point (no space after Chinese punctuation)
+// Joins picked comments into one bullet point with a full stop between them.
+// Chinese text gets "。" and no space; English gets "." and a space.
+const CJK = /[\u3000-\u303f\uff00-\uffef\u4e00-\u9fff]$/;
+const ENDS_SENTENCE = /[.!?。！？]$/;
 export function joinComments(parts) {
-  return parts.reduce((out, t) => {
+  return parts.map(p => p.trim()).filter(Boolean).reduce((out, t) => {
     if (!out) return t;
-    return /[\u3000-\u303f\uff00-\uffef\u4e00-\u9fff]$/.test(out) ? out + t : `${out} ${t}`;
+    const cjk = CJK.test(out);
+    const stop = ENDS_SENTENCE.test(out) ? "" : cjk ? "。" : ".";
+    return cjk ? out + stop + t : `${out}${stop} ${t}`;
   }, "");
 }
 
