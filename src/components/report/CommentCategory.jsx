@@ -77,10 +77,6 @@ export default function CommentCategory({
   const handleSelectComment = (text) => {
     if (isMulti) {
       if (selectedParts.includes(text)) { onChangeParts(selectedParts.filter(t => t !== text)); return; }
-      if (selectedParts.length >= pickCount) {
-        alert(`You can choose ${pickCount} comments here. Untick one first.`);
-        return;
-      }
       onChangeParts([...selectedParts, text]);
       return;
     }
@@ -178,16 +174,6 @@ export default function CommentCategory({
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Chinese Reading / Writing: staff must pick exactly 2 comments */}
-      {isMulti && (
-        <div className={`rounded-lg border-2 px-4 py-3 text-sm font-bold ${
-          selectedParts.length === pickCount ? "bg-green-50 border-green-300 text-green-800" : "bg-amber-50 border-amber-300 text-amber-900"
-        }`}>
-          You must choose {pickCount} comments for {category.label.replace(/^\d+\.\s*/, "")} ({selectedParts.length} of {pickCount} chosen).
-          They will be joined with a full stop into one bullet point.
         </div>
       )}
 
@@ -405,7 +391,7 @@ export default function CommentCategory({
           <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-green-700 uppercase mb-1">
-              {isMulti ? `Selected Comments (${selectedParts.length} of ${pickCount}) — shown as one bullet point` : "Selected Comment"}
+              {isMulti ? `Selected Comments (${selectedParts.length}) — shown as one bullet point` : "Selected Comment"}
             </p>
             <p className="text-base text-green-900">{currentValue}</p>
           </div>
@@ -426,8 +412,7 @@ export default function CommentCategory({
           {onNextCategory && (
           <Button
             onClick={onNextCategory}
-            disabled={isMulti ? selectedParts.length !== pickCount : !currentValue}
-            title={isMulti && selectedParts.length !== pickCount ? `Choose ${pickCount} comments to continue` : undefined}
+            disabled={!currentValue}
             className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold"
           >
             Next Category →

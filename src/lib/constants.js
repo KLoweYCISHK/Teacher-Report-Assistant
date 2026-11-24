@@ -63,7 +63,7 @@ export const ADMIN_PERIOD = "shared";
 // and staff pick up to 2 comments in each, which join into one bullet point.
 const CHINESE_LABELS = { Assessment: "1. Reading", Performance2: "2. Writing" };
 const CHINESE_SHORT_LABELS = { Assessment: "Reading", Performance2: "Writing" };
-export const CHINESE_PICK_COUNT = 2;
+export const CHINESE_PICK_COUNT = Infinity; // no limit
 export const CHINESE_MULTI_CATEGORY_IDS = ["Assessment", "Performance2"];
 
 export function isChineseDept(dept) {
