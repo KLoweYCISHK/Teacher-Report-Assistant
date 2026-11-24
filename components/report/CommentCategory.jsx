@@ -77,10 +77,6 @@ export default function CommentCategory({
   const handleSelectComment = (text) => {
     if (isMulti) {
       if (selectedParts.includes(text)) { onChangeParts(selectedParts.filter(t => t !== text)); return; }
-      if (selectedParts.length >= pickCount) {
-        alert(`You can choose ${pickCount} comments here. Untick one first.`);
-        return;
-      }
       onChangeParts([...selectedParts, text]);
       return;
     }
@@ -395,7 +391,7 @@ export default function CommentCategory({
           <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-green-700 uppercase mb-1">
-              {isMulti ? `Selected Comments (${selectedParts.length} of ${pickCount}) — shown as one bullet point` : "Selected Comment"}
+              {isMulti ? `Selected Comments (${selectedParts.length}) — shown as one bullet point` : "Selected Comment"}
             </p>
             <p className="text-base text-green-900">{currentValue}</p>
           </div>
