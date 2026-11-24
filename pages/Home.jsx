@@ -48,6 +48,10 @@ export default function Home() {
   const isChinese = isChineseSubject(selectedSubject, data.departments);
   const bankCategory = (id) => baseBankCategory(id, isChinese);
 
+  // Classes started before the change keep their saved labels, so relabel Reading / Writing here
+  const displayCategories = activeCategories.map(c =>
+    c.id === "Assessment" || c.id === "Performance2" ? { ...c, label: getCategoryLabel(c.id, isChinese) } : c);
+
   const isSetup = students.length === 0;
   const isResultStep = !isSetup && currentStepIndex === students.length;
   const activeStudent = !isSetup && !isResultStep ? students[currentStepIndex] : null;
@@ -339,7 +343,7 @@ export default function Home() {
             studentIndex={currentStepIndex}
             totalStudents={students.length}
             onPrevStudent={currentStepIndex > 0 ? () => { setCurrentStepIndex(currentStepIndex - 1); window.scrollTo(0, 0); } : undefined}
-            categories={activeCategories}
+            categories={displayCategories}
             classData={classData}
             comments={data.comments}
             getCommentsForCategory={(catId, skill) => {

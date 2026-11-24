@@ -11,7 +11,7 @@ import {
   BookOpen, Calendar, Users, Plus, Trash2, ArrowRight,
   Briefcase, Filter, FileText, Check, Upload, Sparkles, FileSpreadsheet
 } from "lucide-react";
-import { REPORT_PERIODS, REQUIRED_CATEGORY_IDS, getCategories, getOptionalCategories, isChineseDept } from "@/lib/constants";
+import { REPORT_PERIODS, REQUIRED_CATEGORY_IDS, getCategories, getOptionalCategories, isChineseDept, isChineseSubject } from "@/lib/constants";
 import { readClassList } from "@/lib/importClassList";
 
 
@@ -40,7 +40,7 @@ export default function ClassSetup({
 
   const filteredSubjects = subjects.filter(s => s.department_id === selectedDept?.id);
   // Chinese department: 1. Reading and 2. Writing instead of the Performance based categories
-  const isChinese = isChineseDept(selectedDept);
+  const isChinese = isChineseDept(selectedDept) || isChineseSubject(selectedSubject);
   const STANDARD_CATEGORIES = getCategories(isChinese);
   const OPTIONAL_CATEGORIES = getOptionalCategories(isChinese);
   const isSharedStyle = selectedSubject?.report_type === "shared";
