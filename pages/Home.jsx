@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useReportData } from "@/lib/useReportData";
-import { getCommentPeriod, getCategoryLabel, bankCategory, ADMIN_PASSWORD, ADMIN_CATEGORY_IDS, PERIOD_SHARE_CATEGORY_IDS } from "@/lib/constants";
+import { getCommentPeriod, getCategoryLabel, bankCategory as baseBankCategory, isChineseSubject, ADMIN_PASSWORD, ADMIN_CATEGORY_IDS, PERIOD_SHARE_CATEGORY_IDS, ADMIN_SUBJECT_ID } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 import Header from "@/components/report/Header";
@@ -13,14 +13,19 @@ import ShareModal from "@/components/report/ShareModal";
 import PeriodShareModal from "@/components/report/PeriodShareModal";
 import ImportExcelModal from "@/components/report/ImportExcelModal";
 import AdminPanel from "@/components/report/AdminPanel.jsx";
+import SavedClasses from "@/components/report/SavedClasses.jsx";
+import { saveClass, newClassId } from "@/lib/savedClasses";
 
 export default function Home() {
-  const data = useReportData();
-
   const [selectedDept, setSelectedDept] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  // Load only the comments for the subject being reported on (or the admin bank)
+  const data = useReportData(isAdmin ? ADMIN_SUBJECT_ID : selectedSubject?.id || null);
+
   const [reportPeriod, setReportPeriod] = useState("Progress 2");
   const [students, setStudents] = useState([]);
+  const [studentInfo, setStudentInfo] = useState({}); // ManageBac grade + ATL, browser only
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [classData, setClassData] = useState({});
   const [activeCategories, setActiveCategories] = useState([]);
@@ -28,7 +33,9 @@ export default function Home() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showPeriodShare, setShowPeriodShare] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Saved progress for this class (browser only)
+  const [classId, setClassId] = useState(null);
+  const [className, setClassName] = useState("");
 
   const handleOpenAdmin = () => {
     const pw = prompt("Enter the admin password:");
@@ -36,6 +43,10 @@ export default function Home() {
     if (pw === ADMIN_PASSWORD) setIsAdmin(true);
     else alert("Incorrect password.");
   };
+
+  // Chinese department uses separate 1. Reading and 2. Writing banks
+  const isChinese = isChineseSubject(selectedSubject, data.departments);
+  const bankCategory = (id) => baseBankCategory(id, isChinese);
 
   const isSetup = students.length === 0;
   const isResultStep = !isSetup && currentStepIndex === students.length;
@@ -63,8 +74,11 @@ export default function Home() {
     );
   }, [selectedSubject, data.comments, getEffectivePeriod]);
 
-  const handleStartClass = (names, categories) => {
+  const handleStartClass = (names, categories, info = {}, name = "") => {
+    setClassId(newClassId());
+    setClassName(name || `${selectedSubject?.name || "Class"} – ${reportPeriod}`);
     setStudents(names);
+    setStudentInfo(info);
     setActiveCategories(categories);
     const initData = {};
     names.forEach(n => { initData[n] = {}; });
@@ -122,7 +136,7 @@ export default function Home() {
   const handleDeleteAllComments = async (categoryId) => {
     categoryId = bankCategory(categoryId);
     if (!selectedSubject) return;
-    const displayCat = getCategoryLabel(categoryId);
+    const displayCat = getCategoryLabel(categoryId, isChinese);
     const period = getEffectivePeriod(categoryId);
     if (!confirm(`Delete ALL ${displayCat} comments for ${selectedSubject.name} in ${period}?`)) return;
     await data.deleteAllCommentsInCategory(selectedSubject.id, categoryId, period);
@@ -146,7 +160,7 @@ export default function Home() {
     if (!selectedSubject || !cats?.length) return;
     const sourcePeriod = reportPeriod;
     const list = targetPeriods.join(" and ");
-    const catNames = cats.map(c => c === "Assessment" ? "Performance based" : getCategoryLabel(c)).join(", ");
+    const catNames = cats.map(c => c === "Assessment" && !isChinese ? "Performance based" : getCategoryLabel(c, isChinese)).join(", ");
     if (!confirm(`Replace the ${catNames} comments in ${list} with ${sourcePeriod}'s?`)) return;
     try {
       for (const target of targetPeriods) {
@@ -192,21 +206,63 @@ export default function Home() {
     }
   };
 
-  const generateFinalBatch = () => {
+  const buildBatch = (names, cats, cData) => {
     let out = "";
-    students.forEach((s, index) => {
+    names.forEach((s, index) => {
       out += `${s}\n`;
-      const cmts = activeCategories
-        .map(c => (classData[s]?.[c.id] || "").trim())
+      const cmts = cats
+        .map(c => (cData[s]?.[c.id] || "").trim())
         .filter(Boolean);
       if (cmts.length > 0) out += cmts.join("\n") + "\n";
-      if (index < students.length - 1) out += "\n-----------------------------------\n\n";
+      if (index < names.length - 1) out += "\n-----------------------------------\n\n";
     });
-    setFinalBatchPrompt(out);
+    return out;
+  };
+
+  const generateFinalBatch = () => setFinalBatchPrompt(buildBatch(students, activeCategories, classData));
+
+  // Save progress to this browser whenever it changes (never to Firebase)
+  useEffect(() => {
+    if (!classId || students.length === 0 || !selectedSubject) return;
+    saveClass({
+      id: classId,
+      name: className,
+      subjectId: selectedSubject.id,
+      subjectName: selectedSubject.name,
+      reportPeriod,
+      students,
+      studentInfo,
+      categories: activeCategories,
+      classData,
+      stepIndex: currentStepIndex,
+    });
+  }, [classId, className, students, studentInfo, activeCategories, classData, currentStepIndex, selectedSubject, reportPeriod]);
+
+  // Carry on with a class saved in this browser
+  const handleResume = (saved) => {
+    const subj = data.subjects.find(s => s.id === saved.subjectId);
+    if (!subj) {
+      alert(`The subject "${saved.subjectName}" can't be found any more, so this class can't be opened.`);
+      return;
+    }
+    setSelectedDept(data.departments.find(d => d.id === subj.department_id) || null);
+    setSelectedSubject(subj);
+    setReportPeriod(saved.reportPeriod);
+    setClassId(saved.id);
+    setClassName(saved.name);
+    setStudents(saved.students);
+    setStudentInfo(saved.studentInfo || {});
+    setActiveCategories(saved.categories);
+    setClassData(saved.classData || {});
+    const step = Math.min(saved.stepIndex || 0, saved.students.length);
+    if (step === saved.students.length) setFinalBatchPrompt(buildBatch(saved.students, saved.categories, saved.classData || {}));
+    setCurrentStepIndex(step);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleReturnStart = () => {
-    if (confirm("Return to start? Current student progress will be lost.")) {
+    if (confirm(`Go to the home page? Your progress on "${className}" is saved in this browser, so you can continue it later.`)) {
+      setClassId(null);
       setStudents([]);
       setCurrentStepIndex(0);
       setClassData({});
@@ -223,13 +279,20 @@ export default function Home() {
         logoUrl={data.logoUrl}
         onSetLogo={data.setLogo}
         onOpenAdmin={isSetup && !isAdmin ? handleOpenAdmin : null}
+        wide={!!activeStudent}
       />
-      {data.loading && (
-        <p className="text-center text-sm text-muted-foreground mt-4 relative z-20">Loading comment banks…</p>
+      {(data.loading || data.commentsLoading) && (
+        <p className="text-center text-sm text-muted-foreground mt-4 relative z-20">
+          {data.loading ? "Loading subjects…" : "Loading comments for this subject…"}
+        </p>
       )}
-      <main className="max-w-[1760px] mx-auto px-4 sm:px-8 -mt-8 relative z-10">
+      <main className={`${activeStudent ? "max-w-[1500px]" : "max-w-5xl"} mx-auto px-4 sm:px-6 -mt-8 relative z-10`}>
         {isAdmin && (
           <AdminPanel data={data} onExit={() => setIsAdmin(false)} />
+        )}
+
+        {isSetup && !isAdmin && (
+          <SavedClasses onResume={handleResume} disabled={data.loading} />
         )}
 
         {isSetup && !isAdmin && (
@@ -270,9 +333,12 @@ export default function Home() {
           <StudentStep
             key={activeStudent}
             subject={syncedSubject}
+            isChinese={isChinese}
             student={activeStudent}
+            studentInfo={studentInfo[activeStudent]}
             studentIndex={currentStepIndex}
             totalStudents={students.length}
+            onPrevStudent={currentStepIndex > 0 ? () => { setCurrentStepIndex(currentStepIndex - 1); window.scrollTo(0, 0); } : undefined}
             categories={activeCategories}
             classData={classData}
             comments={data.comments}
@@ -323,6 +389,8 @@ export default function Home() {
             window.scrollTo(0, 0);
           }}
           isLastStep={currentStepIndex === students.length - 1}
+          wide={!!activeStudent}
+          savedNote={classId ? `✓ "${className}" saved in this browser` : null}
           disableNext={!isCurrentStudentComplete}
         />
       )}
@@ -330,6 +398,7 @@ export default function Home() {
       {showPeriodShare && (
         <PeriodShareModal
           sourcePeriod={reportPeriod}
+          isChinese={isChinese}
           onClose={() => setShowPeriodShare(false)}
           onConfirm={handleSharePeriods}
         />
@@ -338,6 +407,7 @@ export default function Home() {
       {showImport && syncedSubject && (
         <ImportExcelModal
           subjectName={syncedSubject.name}
+          isChinese={isChinese}
           reportPeriod={reportPeriod}
           onClose={() => setShowImport(false)}
           onConfirm={handleImportExcel}
@@ -347,6 +417,7 @@ export default function Home() {
       {showShareModal && syncedSubject && (
         <ShareModal
           currentSubjectId={syncedSubject.id}
+          isChinese={isChinese}
           subjects={data.subjects}
           departments={data.departments}
           onClose={() => setShowShareModal(false)}

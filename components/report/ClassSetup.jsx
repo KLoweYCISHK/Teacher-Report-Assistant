@@ -11,7 +11,8 @@ import {
   BookOpen, Calendar, Users, Plus, Trash2, ArrowRight,
   Briefcase, Filter, FileText, Check, Upload, Sparkles, FileSpreadsheet
 } from "lucide-react";
-import { REPORT_PERIODS, OPTIONAL_CATEGORIES, STANDARD_CATEGORIES, REQUIRED_CATEGORY_IDS } from "@/lib/constants";
+import { REPORT_PERIODS, REQUIRED_CATEGORY_IDS, getCategories, getOptionalCategories, isChineseDept } from "@/lib/constants";
+import { readClassList } from "@/lib/importClassList";
 
 
 export default function ClassSetup({
@@ -26,6 +27,7 @@ export default function ClassSetup({
 }) {
   const [pltBusy, setPltBusy] = useState(false);
   const [namesInput, setNamesInput] = useState("");
+  const [className, setClassName] = useState("");
   const [isCreatingSubject, setIsCreatingSubject] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectType, setNewSubjectType] = useState("full");
@@ -37,45 +39,37 @@ export default function ClassSetup({
   }, [selectedSubject?.id]);
 
   const filteredSubjects = subjects.filter(s => s.department_id === selectedDept?.id);
+  // Chinese department: 1. Reading and 2. Writing instead of the Performance based categories
+  const isChinese = isChineseDept(selectedDept);
+  const STANDARD_CATEGORIES = getCategories(isChinese);
+  const OPTIONAL_CATEGORIES = getOptionalCategories(isChinese);
   const isSharedStyle = selectedSubject?.report_type === "shared";
   const showSharedConfig = isSharedStyle && reportPeriod !== "Mocks";
   const hasSelectedOptional = Object.values(selectedOptionals).some(v => v);
 
+  // Optional ManageBac (Term Grades) import: fills the names and keeps each
+  // student's final grade and ATL scores in the browser for the report steps
+  const [classInfo, setClassInfo] = useState({});
+  const importedCount = Object.keys(classInfo).length;
+
   const handleFileImport = async (event) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
-
     setIsImporting(true);
     try {
-      // Read the TermGrades export in the browser: C = Last Name, D = First Name,
-      // F = Preferred Name, H = Final Grade.
-      const XLSX = await import("xlsx");
-      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-      const cell = (row, i) => String(row[i] ?? "").trim();
-
-      const students = rows
-        .filter(r => cell(r, 2) && cell(r, 2).toLowerCase() !== "last name")
-        .map(r => {
-          const name = [cell(r, 2), cell(r, 3)].filter(Boolean).join(" ") || cell(r, 5);
-          const grade = cell(r, 7);
-          return grade ? `${name}, ${grade}` : name;
-        })
-        .filter(Boolean);
-
-      if (students.length > 0) {
-        setNamesInput(prev => (prev.trim() ? prev + "\n" + students.join("\n") : students.join("\n")));
-        alert(`Successfully imported ${students.length} students!`);
-      } else {
-        alert("Could not find student names in the file. Names should be in columns C and D.");
+      const list = await readClassList(file);
+      if (list.length === 0) {
+        alert("No students found. Use the Term Grades export from ManageBac (names in columns C–F).");
+        return;
       }
+      setNamesInput(list.map(s => s.name).join("\n"));
+      setClassInfo(Object.fromEntries(list.map(s => [s.name, { grade: s.grade, atl: s.atl }])));
     } catch (error) {
       console.error("Import failed:", error);
-      alert("Import failed: " + error.message);
+      alert("Could not read that file. Please choose the ManageBac Excel (.xlsx) export.");
     } finally {
       setIsImporting(false);
-      event.target.value = "";
     }
   };
 
@@ -99,7 +93,8 @@ export default function ClassSetup({
       finalCategories = [...STANDARD_CATEGORIES];
     }
 
-    onStartClass(students, finalCategories);
+    const info = Object.fromEntries(students.filter(n => classInfo[n]).map(n => [n, classInfo[n]]));
+    onStartClass(students, finalCategories, info, className.trim());
   };
 
   const handleSaveSubject = () => {
@@ -251,7 +246,7 @@ export default function ClassSetup({
                 </SelectContent>
               </Select>
               {selectedSubject && onOpenImport && (
-                <Button variant="outline" className="text-green-700 hover:text-green-800" onClick={onOpenImport} title="Import Performance based and Development comments from Excel">
+                <Button variant="outline" className="text-green-700 hover:text-green-800" onClick={onOpenImport} title={isChinese ? "Import Reading, Writing and Development comments from Excel" : "Import Performance based and Development comments from Excel"}>
                   <FileSpreadsheet className="w-4 h-4 mr-1" /> Import from Excel
                 </Button>
               )}
@@ -318,7 +313,7 @@ export default function ClassSetup({
                 <Filter className="w-5 h-5 text-accent" />
                 <h3 className="font-bold">Configure Categories</h3>
               </div>
-              <p className="text-sm text-muted-foreground">Both Performance based categories and Development are compulsory. Select at least one optional.</p>
+              <p className="text-sm text-muted-foreground">{isChinese ? "Reading, Writing" : "Both Performance based categories"} and Development are compulsory. Select at least one optional.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {STANDARD_CATEGORIES.filter(c => REQUIRED_CATEGORY_IDS.includes(c.id)).map(c => (
                   <div key={c.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg opacity-70 cursor-not-allowed">
@@ -352,9 +347,32 @@ export default function ClassSetup({
         {/* Step 4: Students */}
         <div className={`space-y-2 transition-opacity ${!selectedSubject ? "opacity-40 pointer-events-none" : ""}`}>
           <Label className="flex items-center gap-2 text-sm font-bold">
-            <Users className="w-4 h-4 text-accent" /> 4. Enter Student Names
+            <Users className="w-4 h-4 text-accent" /> 4. Name Your Class &amp; Enter Students
           </Label>
-          <p className="text-xs text-muted-foreground">One name per line. These are stored only in your browser session.</p>
+          <Input
+            value={className}
+            onChange={(e) => setClassName(e.target.value)}
+            placeholder="Class name, e.g. 10H History"
+            className="max-w-sm"
+          />
+          <p className="text-xs text-muted-foreground -mt-1">Your progress is saved in this browser under this name, so you can come back to it.</p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">One name per line. Names are stored only in this browser, never online.</p>
+            <label className={`text-xs font-bold text-green-700 hover:underline flex items-center gap-1 ${isImporting ? "opacity-50" : "cursor-pointer"}`}>
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              {isImporting ? "Reading…" : "Import class from ManageBac"}
+              <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileImport} disabled={isImporting} />
+            </label>
+          </div>
+          {importedCount > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs bg-green-50 border border-green-200 text-green-800 rounded-md px-3 py-1.5">
+              <span className="flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                {importedCount} students imported. Their final grade and ATL scores will show beside each name.
+              </span>
+              <button className="font-bold hover:underline" onClick={() => { setClassInfo({}); setNamesInput(""); }}>Clear</button>
+            </div>
+          )}
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">Student Name, Final Grade (optional)</p>
             <Textarea
