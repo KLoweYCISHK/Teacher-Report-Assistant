@@ -15,6 +15,7 @@ import ImportExcelModal from "@/components/report/ImportExcelModal";
 import AdminPanel from "@/components/report/AdminPanel.jsx";
 import SavedClasses from "@/components/report/SavedClasses.jsx";
 import { saveClass, newClassId } from "@/lib/savedClasses";
+import { exportCommentBank } from "@/lib/importCommentBank";
 
 export default function Home() {
   const [selectedDept, setSelectedDept] = useState(null);
@@ -185,14 +186,38 @@ export default function Home() {
     if (!selectedSubject || plan.length === 0) return false;
     try {
       const sheets = plan.map(p => ({ ...p, categoryId: bankCategory(p.categoryId) }));
-      const { added, skipped } = await data.importCommentBank(selectedSubject.id, reportPeriod, sheets);
-      alert(`Imported ${added} comment${added === 1 ? "" : "s"}` + (skipped ? ` (${skipped} already in the bank were skipped).` : "."));
+      const { added, removed } = await data.importCommentBank(selectedSubject.id, reportPeriod, sheets);
+      alert(`Imported ${added} comment${added === 1 ? "" : "s"}` + (removed ? `, replacing ${removed} old comment${removed === 1 ? "" : "s"}.` : "."));
       return true;
     } catch (e) {
       console.error(e);
       alert("Import failed. Please try again.");
       return false;
     }
+  };
+
+  // Download this subject's comment bank for the current report period, in the import format
+  const handleExportBank = async () => {
+    const subject = data.subjects.find(s => s.id === selectedSubject?.id);
+    if (!subject) return;
+    try {
+      const ok = await exportCommentBank({ subject, period: reportPeriod, comments: data.comments, chinese: isChinese, bankCategory });
+      if (!ok) alert(`There are no comments in ${subject.name} for ${reportPeriod} to export.`);
+    } catch (e) {
+      console.error(e);
+      alert("Export failed. Please try again.");
+    }
+  };
+
+  // How many comments each import category already has in this report period
+  const importExistingCounts = () => {
+    const counts = {};
+    ["Assessment", "Performance2", "Improvement", "HPL", "Homework"].forEach(id => {
+      const bank = bankCategory(id);
+      counts[id] = data.comments.filter(c =>
+        c.subject_id === selectedSubject?.id && c.category === bank && c.period === reportPeriod).length;
+    });
+    return counts;
   };
 
   // Pull the admin (PLT) Attitude to Learning and Homework banks into the chosen subjects
@@ -330,6 +355,7 @@ export default function Home() {
             onUpdateMockTitle={handleUpdateMockTitle}
             onApplyPlt={handleApplyPlt}
             onOpenImport={() => setShowImport(true)}
+            onExportBank={handleExportBank}
           />
         )}
 
@@ -370,6 +396,7 @@ export default function Home() {
             onDeleteComment={async (id) => await data.deleteComment(id)}
             onOpenShareModal={() => setShowShareModal(true)}
             onOpenImport={() => setShowImport(true)}
+            onExportBank={handleExportBank}
             onSharePeriod={() => setShowPeriodShare(true)}
             onDeleteAllComments={handleDeleteAllComments}
             reportPeriod={reportPeriod}
@@ -413,6 +440,9 @@ export default function Home() {
           subjectName={syncedSubject.name}
           isChinese={isChinese}
           reportPeriod={reportPeriod}
+          existingCounts={importExistingCounts()}
+          usesPlt={syncedSubject.atl_source === "plt"}
+          onExport={handleExportBank}
           onClose={() => setShowImport(false)}
           onConfirm={handleImportExcel}
         />

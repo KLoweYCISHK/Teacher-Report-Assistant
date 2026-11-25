@@ -155,36 +155,45 @@ export function useReportData(subjectId = null) {
     return bulkCreate(COL.comments, records);
   };
 
-  // Excel import: add comments for each category/tab/level and add any new tabs to the subject.
-  // Comments the subject already has in that tab and level are skipped.
+  // Excel import: for each category in the file, REPLACE that category's comments and tabs
+  // in this report period. Categories the file doesn't include (or sheets with no comments)
+  // are left exactly as they are. Other report periods are never touched.
   const importCommentBank = async (subjectId, period, sheets) => {
-    const records = [];
-    let skipped = 0;
+    const filled = sheets.filter(s => s.comments.length > 0);
+    if (filled.length === 0) return { added: 0, removed: 0 };
+
+    const current = await getSubjectComments(subjectId); // fresh copy from the database
     const subj = subjects.find(s => s.id === subjectId);
     const skillTabs = { ...(subj?.skill_tabs || {}) };
+    const records = [];
+    const toDelete = [];
 
-    sheets.forEach(({ categoryId, tabs, comments: incoming }) => {
-      const existing = new Set(
-        comments
-          .filter(c => c.subject_id === subjectId && c.category === categoryId && c.period === period)
-          .map(c => [c.skill_tab || "General", c.level, c.text.trim()].join("|"))
-      );
+    filled.forEach(({ categoryId, tabs, comments: incoming }) => {
+      const inCategory = current.filter(c => c.category === categoryId);
+      toDelete.push(...inCategory.filter(c => c.period === period));
+
+      // Keep tabs still used by this category's comments in other report periods
+      const usedElsewhere = new Set(inCategory.filter(c => c.period !== period).map(c => c.skill_tab || "General"));
+      const keptTabs = (skillTabs[categoryId] || []).filter(t => usedElsewhere.has(t));
+      skillTabs[categoryId] = Array.from(new Set([...tabs, ...keptTabs])).filter(t => t !== "General");
+
+      const seen = new Set();
       incoming.forEach(c => {
         const key = [c.skill_tab, c.level, c.text].join("|");
-        if (existing.has(key)) { skipped++; return; }
-        existing.add(key);
+        if (seen.has(key)) return;
+        seen.add(key);
         records.push({
           subject_id: subjectId, category: categoryId, level: c.level, text: c.text,
-          period, skill_tab: c.skill_tab, sort_order: comments.length + records.length,
+          period, skill_tab: c.skill_tab, sort_order: records.length,
         });
       });
-      skillTabs[categoryId] = Array.from(new Set([...(skillTabs[categoryId] || []), ...tabs]))
-        .filter(t => t !== "General");
     });
 
-    if (records.length > 0) await bulkCreate(COL.comments, records);
+    // Add the new comments first, then remove the old ones, so a failed import never empties a bank
+    await bulkCreate(COL.comments, records);
+    await deleteRefs(toDelete.map(c => doc(db, COL.comments, c.id)));
     await updateDoc(doc(db, COL.subjects, subjectId), { skill_tabs: skillTabs });
-    return { added: records.length, skipped };
+    return { added: records.length, removed: toDelete.length };
   };
 
   const editComment = async (commentId, newText) => {

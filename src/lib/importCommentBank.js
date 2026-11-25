@@ -1,4 +1,4 @@
-import { getCategoryLevels, getCategoryLabel } from "@/lib/constants";
+import { getCategoryLevels, getCategoryLabel, normaliseLevel } from "@/lib/constants";
 
 // Which category each worksheet fills, guessed from the sheet name
 const SHEET_MATCHERS = [
@@ -66,4 +66,68 @@ export async function readWorkbook(file) {
     }
     return { sheetName, guess: categoryForSheet(sheetName), rows: XLSX.utils.sheet_to_json(ws, opts) };
   });
+}
+
+// Sheets written by the export, named so the import recognises them again
+export function exportSheets(chinese = false) {
+  const first = chinese
+    ? [{ id: "Assessment", name: "Reading" }, { id: "Performance2", name: "Writing" }]
+    : [{ id: "Assessment", name: "Performance based" }];
+  return [...first,
+    { id: "Improvement", name: "Development" },
+    { id: "HPL", name: "ATL" },
+    { id: "Homework", name: "Homework" }];
+}
+
+// Builds the rows for one category in the import format:
+//   row 1 = "Categories" + the levels; column A = tab; columns B onwards = one comment per level
+// Comments with no tab come first with column A left blank.
+export function buildSheetRows(comments, categoryId, tabOrder = []) {
+  const levels = getCategoryLevels(categoryId);
+  const byTab = new Map();
+  const seen = new Set();
+  comments.forEach(c => {
+    const tab = c.skill_tab && c.skill_tab !== "General" ? c.skill_tab : "";
+    const level = normaliseLevel(categoryId, c.level);
+    const idx = levels.indexOf(level);
+    const text = clean(c.text);
+    if (idx < 0 || !text) return;
+    const key = [tab, level, text].join("|");
+    if (seen.has(key)) return;
+    seen.add(key);
+    if (!byTab.has(tab)) byTab.set(tab, levels.map(() => []));
+    byTab.get(tab)[idx].push(text);
+  });
+
+  const order = ["", ...tabOrder, ...byTab.keys()];
+  const tabs = Array.from(new Set(order)).filter(t => byTab.has(t));
+  const rows = [["Categories", ...levels]];
+  tabs.forEach(tab => {
+    const cols = byTab.get(tab);
+    const height = Math.max(...cols.map(c => c.length));
+    for (let r = 0; r < height; r++) rows.push([tab, ...cols.map(c => c[r] || "")]);
+  });
+  return rows.length > 1 ? rows : null;
+}
+
+// Downloads a subject's comment bank for one report period, in the same format as the import
+export async function exportCommentBank({ subject, period, comments, chinese = false, bankCategory = id => id }) {
+  const XLSX = await import("xlsx");
+  const wb = XLSX.utils.book_new();
+  let count = 0;
+  exportSheets(chinese).forEach(({ id, name }) => {
+    const bank = bankCategory(id);
+    const list = comments.filter(c =>
+      c.subject_id === subject.id && c.category === bank && (c.period === period || c.period === "shared"));
+    const rows = buildSheetRows(list, id, subject.skill_tabs?.[bank] || []);
+    if (!rows) return;
+    count += rows.length - 1;
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [{ wch: 32 }, { wch: 40 }, { wch: 40 }, { wch: 40 }, { wch: 40 }];
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  });
+  if (count === 0) return false;
+  const safe = s => String(s || "").replace(/[\\/:*?"<>|]+/g, "-").trim();
+  XLSX.writeFile(wb, `${safe(subject.name)} - ${safe(period)} - Comment Bank.xlsx`);
+  return true;
 }

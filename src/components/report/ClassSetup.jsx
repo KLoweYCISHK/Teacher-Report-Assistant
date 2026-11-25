@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   BookOpen, Calendar, Users, Plus, Trash2, ArrowRight,
-  Briefcase, Filter, FileText, Check, Upload, Sparkles, FileSpreadsheet
+  Briefcase, Filter, FileText, Check, Upload, Sparkles, FileSpreadsheet, Download
 } from "lucide-react";
 import { REPORT_PERIODS, REQUIRED_CATEGORY_IDS, getCategories, getOptionalCategories, isChineseDept, isChineseSubject } from "@/lib/constants";
 import { readClassList } from "@/lib/importClassList";
@@ -24,6 +24,7 @@ export default function ClassSetup({
   onUpdateMockTitle,
   onApplyPlt,
   onOpenImport,
+  onExportBank,
 }) {
   const [pltBusy, setPltBusy] = useState(false);
   const [namesInput, setNamesInput] = useState("");
@@ -248,6 +249,11 @@ export default function ClassSetup({
               {selectedSubject && onOpenImport && (
                 <Button variant="outline" className="text-green-700 hover:text-green-800" onClick={onOpenImport} title={isChinese ? "Import Reading, Writing and Development comments from Excel" : "Import Performance based and Development comments from Excel"}>
                   <FileSpreadsheet className="w-4 h-4 mr-1" /> Import from Excel
+                </Button>
+              )}
+              {selectedSubject && onExportBank && (
+                <Button variant="outline" size="icon" className="text-green-700 hover:text-green-800" onClick={onExportBank} title={`Export this subject's comment bank for ${reportPeriod} (same format as the import)`}>
+                  <Download className="w-4 h-4" />
                 </Button>
               )}
               {selectedSubject && (
