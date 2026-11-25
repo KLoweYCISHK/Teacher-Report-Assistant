@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CheckCircle, FileText, Trash2, Globe, Share2,
-  Copy, Check, FileSpreadsheet, Eye, EyeOff, Settings, X
+  Copy, Check, FileSpreadsheet, Eye, EyeOff, Settings, X, Download
 } from "lucide-react";
 import CommentCategory from "./CommentCategory.jsx";
 import { ATL_FIELDS } from "@/lib/importClassList";
@@ -29,6 +29,7 @@ export default function StudentStep({
   onDeleteComment,
   onOpenShareModal,
   onOpenImport,
+  onExportBank,
   onSharePeriod,
   onDeleteAllComments,
   reportPeriod,
@@ -315,6 +316,11 @@ export default function StudentStep({
                 {onOpenImport && (
                   <Button className="w-full justify-start bg-green-600 hover:bg-green-700 text-white text-sm font-bold" onClick={() => { setShowSettings(false); onOpenImport(); }}>
                     <FileSpreadsheet className="w-4 h-4 mr-2" /> Upload comments from Excel
+                  </Button>
+                )}
+                {onExportBank && (
+                  <Button variant="outline" className="w-full justify-start text-green-700 text-sm" onClick={onExportBank}>
+                    <Download className="w-4 h-4 mr-2" /> Export comment bank ({reportPeriod})
                   </Button>
                 )}
                 <Button variant="outline" className="w-full justify-start text-purple-700 text-sm" onClick={() => { setShowSettings(false); onOpenShareModal(); }}>

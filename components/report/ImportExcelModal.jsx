@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { X, FileSpreadsheet, Upload } from "lucide-react";
+import { X, FileSpreadsheet, Upload, Download, AlertTriangle } from "lucide-react";
 import { readWorkbook, readSheet, categoryForSheet } from "@/lib/importCommentBank";
 import ImportFormatGuide from "./ImportFormatGuide.jsx";
 
@@ -22,7 +22,8 @@ const CHINESE_TARGETS = [
   { id: "Homework", label: "Homework" },
 ];
 
-export default function ImportExcelModal({ subjectName, reportPeriod, isChinese = false, onClose, onConfirm }) {
+// existingCounts: { [categoryId]: number of comments already in the bank for this report period }
+export default function ImportExcelModal({ subjectName, reportPeriod, isChinese = false, existingCounts = {}, usesPlt = false, onExport, onClose, onConfirm }) {
   const targetList = isChinese ? CHINESE_TARGETS : TARGETS;
   const [sheets, setSheets] = useState(null);
   const [fileName, setFileName] = useState("");
@@ -54,9 +55,20 @@ export default function ImportExcelModal({ subjectName, reportPeriod, isChinese 
 
   const duplicateTarget = plan.length !== new Set(plan.map(p => p.categoryId)).size;
   const total = plan.reduce((n, p) => n + p.comments.length, 0);
+  const labelOf = (id) => targetList.find(t => t.id === id)?.label || id;
+  // Only sheets with comments replace a category; empty sheets leave it alone
+  const replacing = plan.filter(p => p.comments.length > 0);
+  const kept = targetList.filter(t => t.id && !replacing.some(p => p.categoryId === t.id));
+  const pltClash = usesPlt && replacing.some(p => p.categoryId === "HPL" || p.categoryId === "Homework");
 
   const handleImport = async () => {
     if (duplicateTarget) { alert("Two sheets are set to the same category. Choose a different one for each."); return; }
+    const lines = replacing.map(p => `• ${labelOf(p.categoryId)}: ${existingCounts[p.categoryId] || 0} current comments → ${p.comments.length} from your file`);
+    const msg = `This will REPLACE all comments and tabs in these categories for ${reportPeriod}:\n\n${lines.join("\n")}`
+      + (kept.length ? `\n\nNot in your file, so kept as they are: ${kept.map(t => t.label).join(", ")}.` : "")
+      + (pltClash ? "\n\nThis subject uses PLT Generated comments for Attitude to Learning / Homework. Your file will replace them for this report." : "")
+      + "\n\nOther report periods are not changed. This can't be undone, so export the current bank first if you may want it back.\n\nContinue?";
+    if (!confirm(msg)) return;
     setBusy(true);
     const ok = await onConfirm(plan);
     setBusy(false);
@@ -77,8 +89,14 @@ export default function ImportExcelModal({ subjectName, reportPeriod, isChinese 
 
         <div className="p-6 flex-1 overflow-y-auto space-y-5">
           <p className="text-sm text-muted-foreground">
-            Adds comments to <strong>{subjectName}</strong> for <strong>{reportPeriod}</strong>. Comments already in the bank are skipped.
+            Replaces the comments in <strong>{subjectName}</strong> for <strong>{reportPeriod}</strong>. Each category in your file (e.g. Performance based, Development) replaces that whole category, tabs included. Categories your file doesn't have, such as ATL or Homework, are kept.
           </p>
+
+          {onExport && (
+            <Button type="button" variant="outline" size="sm" className="text-green-700 border-green-300" onClick={onExport}>
+              <Download className="w-3.5 h-3.5 mr-1" /> Export current comment bank first
+            </Button>
+          )}
 
           <div className="bg-muted/60 border rounded-lg p-4">
             <p className="text-xs font-bold uppercase text-muted-foreground mb-2">Required format</p>
@@ -105,6 +123,15 @@ export default function ImportExcelModal({ subjectName, reportPeriod, isChinese 
                     {targetList.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                   </select>
                 </div>
+                {p && p.comments.length > 0 && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    Replaces {existingCounts[p.categoryId] || 0} current {labelOf(p.categoryId)} comments
+                  </p>
+                )}
+                {p && p.comments.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No comments on this sheet, so the current {labelOf(p.categoryId)} comments are kept.</p>
+                )}
                 {p ? (
                   <ul className="text-xs space-y-1">
                     {p.tabs.map(tab => (
@@ -113,7 +140,7 @@ export default function ImportExcelModal({ subjectName, reportPeriod, isChinese 
                         <span className="text-muted-foreground">{p.comments.filter(c => c.skill_tab === tab).length} comments</span>
                       </li>
                     ))}
-                    {p.tabs.length === 0 && <li className="text-muted-foreground">No comments found on this sheet.</li>}
+                    
                   </ul>
                 ) : (
                   <p className="text-xs text-muted-foreground">This sheet won't be imported.</p>
@@ -126,7 +153,7 @@ export default function ImportExcelModal({ subjectName, reportPeriod, isChinese 
         <div className="p-6 border-t bg-muted flex gap-2 justify-end">
           <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
           <Button onClick={handleImport} disabled={busy || total === 0}>
-            {busy && sheets ? "Importing…" : `Import ${total} comments`}
+            {busy && sheets ? "Importing…" : `Replace with ${total} comments`}
           </Button>
         </div>
       </div>
