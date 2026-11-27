@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { REPORT_PERIODS, REQUIRED_CATEGORY_IDS, getCategories, getOptionalCategories, isChineseDept, isChineseSubject } from "@/lib/constants";
 import { readClassList } from "@/lib/importClassList";
+import { deptUsesPlt as departmentUsesPlt } from "@/lib/useReportData";
 
 
 export default function ClassSetup({
@@ -119,8 +120,8 @@ export default function ClassSetup({
   };
 
   // PLT Generated comments go to every subject in the chosen department
-  const pltCount = filteredSubjects.filter(s => s.atl_source === "plt").length;
-  const deptUsesPlt = filteredSubjects.length > 0 && pltCount === filteredSubjects.length;
+  // Once chosen, subjects added to the department later get them automatically
+  const deptUsesPlt = departmentUsesPlt(selectedDept, subjects);
 
   const handleApplyPlt = async () => {
     if (!selectedDept) return;
@@ -186,7 +187,7 @@ export default function ClassSetup({
               </Button>
               <span className="text-xs text-muted-foreground">
                 {deptUsesPlt
-                  ? `All ${selectedDept.name} subjects use the PLT Attitude to Learning and Homework comments.`
+                  ? `All ${selectedDept.name} subjects use the PLT Attitude to Learning and Homework comments, including any new subjects you add.`
                   : `Add the PLT Attitude to Learning and Homework comments to every ${selectedDept.name} subject.`}
               </span>
             </div>
